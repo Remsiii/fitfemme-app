@@ -1,4 +1,5 @@
-import { BrowserRouter as Routes, Route } from "react-router-dom";
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Home } from "./HomeScreen";
 import { ActivityScreen } from "./pages/ActivityScreen";
 import { CameraScreen } from "./pages/CameraScreen";
