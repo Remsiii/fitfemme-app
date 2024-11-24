@@ -14,20 +14,19 @@ import {
     ShieldAlertIcon,
     User2Icon,
   } from "lucide-react";
-  import React from "react";
   import {
     Avatar,
     AvatarFallback,
     AvatarImage,
-  } from "../../components/ui/avatar";
-  import { Button } from "../../components/ui/button";
+  } from "@/components/ui/avatar";
+  import { Button } from "@/components/ui/button";
   import {
     Card,
     CardContent,
     CardHeader,
     CardTitle,
-  } from "../../components/ui/card";
-  import { Switch } from "../../components/ui/switch";
+  } from "@/components/ui/card";
+  import { Switch } from "@/components/ui/switch";
   
   export const Profile = (): JSX.Element => {
     const statsData = [

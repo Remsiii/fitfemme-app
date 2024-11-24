@@ -1,10 +1,7 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { ArrowLeftIcon } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 interface BMICalculatorProps {
   onBMICalculated: (bmiValue: number) => void;
@@ -12,7 +9,7 @@ interface BMICalculatorProps {
   initialBMI?: number;
 }
 
-export const BMICalculator = ({ onBMICalculated, onClose, initialBMI }: BMICalculatorProps): JSX.Element => {
+export const BMICalculator = ({ onBMICalculated, onClose }: BMICalculatorProps): JSX.Element => {
   const [weight, setWeight] = useState<string>("");
   const [height, setHeight] = useState<string>("");
   const [age, setAge] = useState<string>("");

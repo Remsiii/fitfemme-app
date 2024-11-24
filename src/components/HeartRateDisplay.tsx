@@ -9,7 +9,7 @@ interface HeartRateDisplayProps {
   onHeartRateChange: (rate: number) => void;
 }
 
-export const HeartRateDisplay: React.FC<HeartRateDisplayProps> = ({ onHeartRateChange }) => {
+export const HeartRateDisplay: React.FC<HeartRateDisplayProps> = ({  }) => {
   const [heartRate, setHeartRate] = useState(72);
 
   const generateRandomHeartRate = () => {

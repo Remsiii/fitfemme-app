@@ -18,7 +18,7 @@ import {
   import { useNavigate } from "react-router-dom";
   import { motion } from "framer-motion";
   import { ArrowLeftIcon } from "lucide-react";
-  import { useState, useEffect } from "react";
+  import { useState } from "react";
   import { BMICalculator } from "./components/BMICalculator";
   import { WaterIntakeForm } from "./components/WaterIntakeForm";
   import { HeartRateDisplay } from "./components/HeartRateDisplay";
@@ -54,13 +54,7 @@ import {
     },
   ];
   
-  const waterIntakeData = [
-    { time: "6am - 8am", amount: "600ml" },
-    { time: "9am - 11am", amount: "500ml" },
-    { time: "11am - 2pm", amount: "1000ml" },
-    { time: "2pm - 4pm", amount: "700ml" },
-    { time: "4pm - now", amount: "900ml" },
-  ];
+
   
   interface BMIHistory {
     value: number;

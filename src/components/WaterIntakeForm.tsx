@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Input } from "./ui/input";
-import { motion } from "framer-motion";
 
 interface WaterIntakeFormProps {
   onAddWaterIntake: (time: string, amount: number) => void;
