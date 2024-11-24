@@ -1,10 +1,8 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { CameraIcon } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 export const CameraScreen = (): JSX.Element => {
-  const navigate = useNavigate();
 
   return (
     <motion.div 

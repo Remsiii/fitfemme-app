@@ -1,9 +1,6 @@
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
 
 export const ActivityScreen = (): JSX.Element => {
-  const navigate = useNavigate();
 
   return (
     <motion.div 

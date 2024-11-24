@@ -1,10 +1,9 @@
 import { HomeIcon, ActivityIcon, CameraIcon, SearchIcon, User2Icon } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 
 export const BottomNavigation = () => {
   const navigate = useNavigate();
-  const location = useLocation();
 
   const tabs = [
     { icon: HomeIcon, label: "Home", path: "/home" },
@@ -18,7 +17,6 @@ export const BottomNavigation = () => {
     <div className="fixed bottom-0 left-0 right-0 h-[90px] bg-white shadow-card-shadow">
       <div className="flex justify-around items-center h-full px-8">
         {tabs.map((tab, index) => {
-          const isActive = location.pathname === tab.path;
           const isMiddleButton = index === 2;
 
           if (isMiddleButton) {
