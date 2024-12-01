@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { User2Icon, Settings2Icon, HeartIcon, BellIcon, ShieldIcon, HelpCircleIcon, PencilIcon, Loader2Icon, LogOutIcon } from "lucide-react";
+import { User2Icon, Loader2Icon, LogOutIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,22 +9,23 @@ import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 
 interface UserProfile {
-  id?: string;
   name: string;
-  age: string;
-  weight: string;
-  height: string;
-  goal: string;
-  user_id?: string;
+  email: string;
+  age?: string;
+  weight?: string;
+  height?: string;
+  goal?: string;
 }
 
 export const ProfileScreen = (): JSX.Element => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile>({
     name: "",
+    email: "",
     age: "",
     weight: "",
     height: "",
@@ -32,72 +33,40 @@ export const ProfileScreen = (): JSX.Element => {
   });
 
   useEffect(() => {
-    checkUser();
-  }, []);
-
-  const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-    loadProfile(user.id);
-  };
-
-  const loadProfile = async (userId: string) => {
-    try {
-      setIsLoading(true);
-      
-      let { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
-      if (error) {
-        // Wenn kein Profil gefunden wurde, erstelle ein neues
-        const newProfile = {
-          user_id: userId,
-          name: "New User",
-          age: "",
-          weight: "",
-          height: "",
-          goal: "Fitness Enthusiast"
-        };
+    const fetchUserProfile = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
         
-        const { data: createdProfile, error: createError } = await supabase
-          .from('profiles')
-          .insert([newProfile])
-          .select()
-          .single();
-
-        if (createError) {
-          console.error('Error creating profile:', createError);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Could not create profile. Please try again."
-          });
+        if (!user) {
+          navigate('/login');
           return;
         }
 
-        data = createdProfile;
+        setUser(user);
+        
+        // Populate profile from user metadata
+        setProfile({
+          name: user.user_metadata?.name || user.email?.split('@')[0] || "New User",
+          email: user.email || "",
+          age: user.user_metadata?.age || "",
+          weight: user.user_metadata?.weight || "",
+          height: user.user_metadata?.height || "",
+          goal: user.user_metadata?.goal || "Fitness Enthusiast"
+        });
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Could not load profile. Please try again."
+        });
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-      if (data) {
-        setProfile(data);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "An unexpected error occurred. Please try again."
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    fetchUserProfile();
+  }, []);
 
   const handleProfileUpdate = (field: keyof UserProfile, value: string) => {
     setProfile(prev => ({
@@ -107,51 +76,60 @@ export const ProfileScreen = (): JSX.Element => {
   };
 
   const handleSaveProfile = async () => {
+    if (!user) return;
+
     try {
       setIsSaving(true);
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate('/login');
-        return;
-      }
-
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          ...profile,
-          user_id: user.id
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error saving profile:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Could not save profile changes. Please try again."
-        });
-        return;
-      }
-
-      // Show success toast
-      toast({
-        title: "Success",
-        description: "Profile changes saved successfully!",
+      // Update Supabase user metadata
+      const { error } = await supabase.auth.updateUser({
+        data: { 
+          name: profile.name,
+          age: profile.age,
+          weight: profile.weight,
+          height: profile.height,
+          goal: profile.goal
+        }
       });
 
-      // Reload profile to ensure we have the latest data
-      await loadProfile(user.id);
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been successfully updated!"
+      });
     } catch (error) {
-      console.error('Error:', error);
+      console.error("Profile update error:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "An unexpected error occurred. Please try again."
+        title: "Update Failed",
+        description: "Could not update profile. Please try again."
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleUpdateEmail = async () => {
+    const newEmail = prompt("Enter new email address:");
+    if (newEmail) {
+      try {
+        const { error } = await supabase.auth.updateUser({ email: newEmail });
+        if (error) throw error;
+        
+        toast({
+          title: "Email Updated",
+          description: "Please check your new email to confirm the change."
+        });
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Email Update Failed",
+          description: error instanceof Error ? error.message : "Unknown error"
+        });
+      }
     }
   };
 
@@ -161,11 +139,10 @@ export const ProfileScreen = (): JSX.Element => {
       if (error) throw error;
       navigate('/login');
     } catch (error) {
-      console.error('Error logging out:', error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to log out. Please try again."
+        title: "Logout Failed",
+        description: "An error occurred while logging out."
       });
     }
   };
@@ -186,7 +163,7 @@ export const ProfileScreen = (): JSX.Element => {
       exit={{ opacity: 0 }}
     >
       <header className="flex items-center justify-between mb-8">
-        <h1 className="text-xl font-semibold">Profile</h1>
+        <h1 className="text-xl font-semibold">Profile Settings</h1>
         <Button
           variant="ghost"
           size="icon"
@@ -203,24 +180,46 @@ export const ProfileScreen = (): JSX.Element => {
         </div>
         
         <div className="w-full max-w-md space-y-4">
-          <div className="space-y-4">
-            <Input
-              type="text"
-              value={profile.name}
-              onChange={(e) => handleProfileUpdate('name', e.target.value)}
-              className="text-center text-xl font-semibold"
-              placeholder="Your Name"
-            />
-            <Input
-              type="text"
-              value={profile.goal}
-              onChange={(e) => handleProfileUpdate('goal', e.target.value)}
-              className="text-center text-gray-500"
-              placeholder="Your Goal"
-            />
-          </div>
-
           <Card className="p-4 space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Name</label>
+              <Input
+                type="text"
+                value={profile.name}
+                onChange={(e) => handleProfileUpdate('name', e.target.value)}
+                placeholder="Enter your name"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Email</label>
+              <div className="flex items-center space-x-2">
+                <Input
+                  type="email"
+                  value={profile.email}
+                  readOnly
+                  className="flex-grow"
+                />
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleUpdateEmail}
+                >
+                  Update
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Fitness Goal</label>
+              <Input
+                type="text"
+                value={profile.goal}
+                onChange={(e) => handleProfileUpdate('goal', e.target.value)}
+                placeholder="Enter your fitness goal"
+              />
+            </div>
+
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Age</label>
               <Input

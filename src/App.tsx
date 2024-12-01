@@ -15,6 +15,7 @@ import { WelcomeScreen } from "./WelcomeScreen";
 import { Notification } from "./Notification";
 import { BMICalculator } from './components/BMICalculator';
 import { Toaster } from "@/components/ui/toaster";
+import { WorkoutDetails } from "./pages/WorkoutDetails";
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
           <Route path="/search" element={<SearchScreen />} />
           <Route path="/profile" element={<ProfileScreen />} />
           <Route path="/notification-screen" element={<NotificationScreen />} />
+          <Route path="/workout-details" element={<WorkoutDetails />} />
         </Routes>
         <BottomNavigation />
       </div>

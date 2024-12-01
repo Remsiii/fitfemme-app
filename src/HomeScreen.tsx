@@ -18,12 +18,17 @@ import {
   import { useNavigate } from "react-router-dom";
   import { motion } from "framer-motion";
   import { ArrowLeftIcon } from "lucide-react";
-  import { useState } from "react";
+  import { useState, useEffect } from "react";
   import { BMICalculator } from "./components/BMICalculator";
   import { WaterIntakeForm } from "./components/WaterIntakeForm";
   import { HeartRateDisplay } from "./components/HeartRateDisplay";
   import { WaterSettings } from "./components/WaterSettings";
-  
+  import { supabase } from "@/lib/supabase";
+  import { Workout } from "@/types/Workout";
+  import { WorkoutCard } from "@/components/WorkoutCard";
+  import { Input } from "@/components/ui/input";
+  import { Search, PlusCircle } from "lucide-react";
+
   interface WaterIntake {
     time: string;
     amount: number;
@@ -78,21 +83,102 @@ import {
       const savedHistory = localStorage.getItem('bmiHistory');
       return savedHistory ? JSON.parse(savedHistory) : [];
     });
+    const [user, setUser] = useState<any>(null);
+    const [userName, setUserName] = useState<string>("User");
 
-    const renderBMIHistory = () => {
-      if (bmiHistory.length === 0) return null;
-      
-      return (
-        <div className="mt-4 space-y-2">
-          <h4 className="text-sm font-medium">Istoric IMC</h4>
-          {bmiHistory.slice(-3).reverse().map((entry, index) => (
-            <div key={index} className="text-xs">
-              {new Date(entry.date).toLocaleDateString()}: {entry.value.toFixed(1)} - {entry.category}
-            </div>
-          ))}
-        </div>
-      );
+    // New Workout States
+    const [workouts, setWorkouts] = useState<Workout[]>([]);
+    const [searchQuery, setSearchQuery] = useState<string>("");
+    const [filteredWorkouts, setFilteredWorkouts] = useState<Workout[]>([]);
+
+    const navigate = useNavigate();
+
+    useEffect(() => {
+      const fetchUserProfile = async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          
+          if (user) {
+            setUser(user);
+            
+            // Prioritize name from user metadata, fallback to email username
+            const displayName = user.user_metadata?.name || 
+                                user.email?.split('@')[0] || 
+                                "User";
+            
+            setUserName(displayName);
+          }
+        } catch (error) {
+          console.error("Error fetching user:", error);
+        }
+      };
+
+      const fetchWorkouts = async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          
+          if (!user) return;
+
+          const { data: workoutsData, error } = await supabase
+            .from('workouts')
+            .select('*')
+            .eq('userId', user.id)
+            .order('createdAt', { ascending: false });
+
+          if (error) throw error;
+
+          setWorkouts(workoutsData || []);
+          setFilteredWorkouts(workoutsData || []);
+        } catch (error) {
+          console.error("Error fetching workouts:", error);
+        }
+      };
+
+      fetchUserProfile();
+      fetchWorkouts();
+    }, []);
+
+    useEffect(() => {
+      if (searchQuery) {
+        const filtered = workouts.filter(workout => 
+          workout.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          workout.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          workout.muscleGroups.some(group => 
+            group.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+        );
+        setFilteredWorkouts(filtered);
+      } else {
+        setFilteredWorkouts(workouts);
+      }
+    }, [searchQuery, workouts]);
+
+    const handleAddWorkout = async () => {
+      const newWorkout: Workout = {
+        name: "New Workout",
+        type: "Mixed",
+        duration: 45,
+        difficulty: "Intermediate",
+        muscleGroups: ["Full Body"],
+        description: "A new workout routine",
+        userId: user.id
+      };
+
+      try {
+        const { data, error } = await supabase
+          .from('workouts')
+          .insert([newWorkout])
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setWorkouts(prev => [data, ...prev]);
+      } catch (error) {
+        console.error("Error adding workout:", error);
+      }
     };
+
 
     const handleBMICalculated = (bmiValue: number) => {
       const newBMI: BMIHistory = {
@@ -141,7 +227,6 @@ import {
       setCurrentHeartRate(rate);
     };
 
-    const navigate = useNavigate();
     return (
       <div className="bg-white flex flex-row justify-center w-full">
         <div className="bg-white w-[375px] h-[1527px] relative">
@@ -149,7 +234,7 @@ import {
             <div className="flex flex-col">
               <span className="text-gray-2 text-sm">Welcome Back,</span>
               <span className="text-black-color text-xl font-semibold">
-                Stefani Wong
+                {userName}
               </span>
             </div>
             <Button 
@@ -163,37 +248,7 @@ import {
             </Button>
           </header>
   
-          <Card className="mx-8 mt-8 bg-gradient-to-b from-[#92A3FD] to-[#9DCEFF] border-none text-white">
-            <CardContent className="p-6">
-              <div className="flex justify-between items-center">
-                <div className="space-y-2">
-                  <h3 className="font-semibold">IMC (Indice de Masă Corporală)</h3>
-                  {currentBMI !== null ? (
-                    <p className="text-sm">
-                      Ai {getBMICategory(currentBMI).toLowerCase()}
-                    </p>
-                  ) : (
-                    <p className="text-sm">Calculează-ți IMC-ul</p>
-                  )}
-                  <Button
-                    className="bg-gradient-to-b from-[#C58BF2] to-[#EEA4CE] hover:opacity-90"
-                    size="sm"
-                    onClick={() => setShowBMICalculator(true)}
-                  >
-                    {currentBMI !== null ? "Recalculează" : "Calculează acum"}
-                  </Button>
-                </div>
-                <div className="relative w-[106px] h-[106px]">
-                  <div className="absolute inset-0 bg-white rounded-full shadow-lg flex items-center justify-center">
-                    <span className="text-black font-semibold">
-                      {currentBMI !== null ? currentBMI.toFixed(1) : "--"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              {renderBMIHistory()}
-            </CardContent>
-          </Card>
+       
   
           <Card className="mx-8 mt-6 bg-gradient-to-b from-[#92A3FD] to-[#9DCEFF] border-none">
             <CardContent className="flex justify-between items-center p-4">
@@ -432,6 +487,7 @@ import {
               ))}
             </div>
           </div>
+  
   
           <div className="fixed bottom-0 left-0 right-0 h-[90px] bg-white shadow-card-shadow">
             <div className="flex justify-around items-center h-full px-8">
