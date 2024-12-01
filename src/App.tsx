@@ -5,6 +5,7 @@ import { ActivityScreen } from "./pages/ActivityScreen";
 import { CameraScreen } from "./pages/CameraScreen";
 import { SearchScreen } from "./pages/SearchScreen";
 import { ProfileScreen } from "./pages/ProfileScreen";
+import { LoginScreen } from "./pages/LoginScreen";
 import { NotificationScreen } from "./HomeScreen";
 import { BottomNavigation } from "./components/BottomNavigation";
 import { Onboarding1 } from "./Onboarding1";
@@ -13,13 +14,15 @@ import { WorkoutTracker } from "./WorkoutTracker";
 import { WelcomeScreen } from "./WelcomeScreen";
 import { Notification } from "./Notification";
 import { BMICalculator } from './components/BMICalculator';
+import { Toaster } from "@/components/ui/toaster";
 
 function App() {
   return (
-
+    <>
       <div > {/* Add padding to account for bottom navigation */}
         <Routes>
           <Route path="/" element={<WelcomeScreen />} />
+          <Route path="/login" element={<LoginScreen />} />
           <Route path="/onboarding1" element={<Onboarding1 />} />
           <Route path="/onboarding2" element={<Onboarding2 />} />
           <Route path="/home" element={<Home />} />
@@ -34,7 +37,8 @@ function App() {
         </Routes>
         <BottomNavigation />
       </div>
- 
+      <Toaster />
+    </>
   );
 }
 
