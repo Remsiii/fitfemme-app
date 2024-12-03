@@ -14,8 +14,8 @@ export const BottomNavigation = () => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 h-[90px] bg-white shadow-card-shadow">
-      <div className="flex justify-around items-center h-full px-8">
+    <div className="fixed bottom-0 w-full bg-white shadow-md z-10">
+      <div className="flex justify-around items-center h-16">
         {tabs.map((tab, index) => {
           const isMiddleButton = index === 2;
 
@@ -38,7 +38,7 @@ export const BottomNavigation = () => {
               size="icon"
               onClick={() => navigate(tab.path)}
             >
-              <tab.icon className="h-6 w-6" />
+              <tab.icon className="w-6 h-6" />
             </Button>
           );
         })}

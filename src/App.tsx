@@ -19,11 +19,13 @@ import { WorkoutDetails } from "./pages/WorkoutDetails";
 import { TakePhoto } from "./pages/WorkoutSchedule";
 import { ProgressPhoto } from "./pages/progress/ProgressPhoto";
 import { CompareResult } from "./pages/progress/CompareResult2";
+import { Profile2 } from "./pages/Profile2";
+import { EditProfile } from "./pages/EditProfile";
 
 function App() {
   return (
-    <>
-      <div > {/* Add padding to account for bottom navigation */}
+    <div className="bg-white flex flex-col min-h-screen w-full max-w-[375px mx-auto relative">
+      <main className="flex-1 overflow-y-auto pb-20">
         <Routes>
           <Route path="/" element={<WelcomeScreen />} />
           <Route path="/login" element={<LoginScreen />} />
@@ -39,14 +41,15 @@ function App() {
           <Route path="/workout-tracker" element={<WorkoutDetails />} />
           <Route path="/compareResult" element={<CompareResult />} />
           <Route path="/search" element={<SearchScreen />} />
-          <Route path="/profile" element={<ProfileScreen />} />
+          <Route path="/profile" element={<Profile2 />} />
+          <Route path="/profile/edit" element={<EditProfile />} />
           <Route path="/notification-screen" element={<NotificationScreen />} />
           <Route path="/workout-details" element={<WorkoutDetails />} />
         </Routes>
-        <BottomNavigation />
-      </div>
+      </main>
+      <BottomNavigation />
       <Toaster />
-    </>
+    </div>
   );
 }
 

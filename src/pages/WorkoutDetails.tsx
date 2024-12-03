@@ -10,7 +10,7 @@ import React from "react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { ScrollArea } from "../components/ui/scroll-area";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const equipmentData = [
   { name: "Barbell", image: "https://c.animaapp.com/ceVJjsdt/img/barbel.svg" },
@@ -82,6 +82,7 @@ const exercisesSet2 = [
 
 export const WorkoutDetails = (): JSX.Element => {
   const location = useLocation();
+  const navigate = useNavigate();
   const workoutTitle = location.state?.workoutTitle || "Fullbody Workout";
 
   return (
@@ -90,7 +91,7 @@ export const WorkoutDetails = (): JSX.Element => {
         {/* Hero Section */}
         <div className="relative h-[418px] bg-gradient-to-b from-[#92A3FD] to-[#9DCEFF]">
           <header className="flex justify-between items-center p-10">
-            <Button variant="secondary" size="icon" className="rounded-lg">
+            <Button variant="secondary" size="icon" className="rounded-lg" onClick={() => navigate('/search')}>
               <ArrowLeftCircleIcon className="h-4 w-4" />
             </Button>
             <h1 className="text-white font-bold">{workoutTitle}</h1>
