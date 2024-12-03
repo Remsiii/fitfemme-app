@@ -1,13 +1,8 @@
 import {
-    ActivityIcon,
     ArrowUp01Icon,
     BellDotIcon,
-    CameraIcon,
     ChevronDownCircleIcon,
     ChevronRightCircleIcon,
-    HomeIcon,
-    SearchCheckIcon,
-    User2Icon,
     Settings2Icon,
   } from "lucide-react";
   import { Badge } from "./components/ui/badge";
@@ -25,9 +20,6 @@ import {
   import { WaterSettings } from "./components/WaterSettings";
   import { supabase } from "@/lib/supabase";
   import { Workout } from "@/types/Workout";
-  import { WorkoutCard } from "@/components/WorkoutCard";
-  import { Input } from "@/components/ui/input";
-  import { Search, PlusCircle } from "lucide-react";
 
   interface WaterIntake {
     time: string;
@@ -487,27 +479,7 @@ import {
               ))}
             </div>
           </div>
-  
-  
-          <div className="fixed bottom-0 left-0 right-0 h-[90px] bg-white shadow-card-shadow">
-            <div className="flex justify-around items-center h-full px-8">
-              <Button variant="ghost" size="icon">
-                <HomeIcon className="h-6 w-6" />
-              </Button>
-              <Button variant="ghost" size="icon">
-                <ActivityIcon className="h-6 w-6" />
-              </Button>
-              <Button className="w-[60px] h-[60px] rounded-full bg-gradient-to-b from-[#92A3FD] to-[#9DCEFF]">
-                <SearchCheckIcon className="h-5 w-5 text-white" />
-              </Button>
-              <Button variant="ghost" size="icon">
-                <CameraIcon className="h-6 w-6" />
-              </Button>
-              <Button variant="ghost" size="icon">
-                <User2Icon className="h-6 w-6" />
-              </Button>
-            </div>
-          </div>
+
   
           {/* BMI Calculator Modal */}
           {showBMICalculator && (

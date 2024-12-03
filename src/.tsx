@@ -153,22 +153,6 @@ import {
             </Card>
           </div>
   
-          <div className="fixed bottom-0 w-full max-w-[375px] h-[90px] shadow-card-shadow bg-white">
-            <div className="relative h-full flex items-center justify-around px-8">
-              <HomeIcon className="w-6 h-6" />
-              <ActivityIcon className="w-6 h-6" />
-              <div className="absolute left-1/2 -translate-x-1/2 -top-[30px]">
-                <Button
-                  size="lg"
-                  className="w-[60px] h-[60px] rounded-full bg-gradient-to-b from-[#92A3FD] to-[#9DCEFF]"
-                >
-                  <SearchCheckIcon className="w-5 h-5 text-white" />
-                </Button>
-              </div>
-              <CameraIcon className="w-6 h-6" />
-              <User2Icon className="w-6 h-6" />
-            </div>
-          </div>
         </div>
       </div>
     );

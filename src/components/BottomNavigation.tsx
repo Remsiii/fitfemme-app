@@ -8,8 +8,8 @@ export const BottomNavigation = () => {
   const tabs = [
     { icon: HomeIcon, label: "Home", path: "/home" },
     { icon: ActivityIcon, label: "Activity", path: "/activity" },
-    { icon: CameraIcon, label: "Camera", path: "/camera" },
     { icon: SearchIcon, label: "Search", path: "/search" },
+    { icon: CameraIcon, label: "Camera", path: "/camera" },
     { icon: User2Icon, label: "Profile", path: "/profile" },
   ];
 

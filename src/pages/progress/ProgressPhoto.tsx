@@ -144,29 +144,6 @@ import {
               ))}
             </ScrollArea>
           </div>
-  
-          <div className="fixed bottom-0 w-[375px] bg-white shadow-card-shadow">
-            <div className="flex items-center justify-around py-6">
-              <Button variant="ghost" size="icon">
-                <HomeIcon className="h-6 w-6" />
-              </Button>
-              <Button variant="ghost" size="icon">
-                <ActivityIcon className="h-6 w-6" />
-              </Button>
-              <Button
-                size="icon"
-                className="w-[60px] h-[60px] rounded-full bg-gradient-to-b from-[#92A3FD] to-[#9DCEFF] -mt-8"
-              >
-                <SearchCheckIcon className="h-5 w-5 text-white" />
-              </Button>
-              <Button variant="ghost" size="icon">
-                <CameraIcon className="h-6 w-6" />
-              </Button>
-              <Button variant="ghost" size="icon">
-                <User2Icon className="h-6 w-6" />
-              </Button>
-            </div>
-          </div>
         </div>
       </div>
     );
