@@ -32,9 +32,9 @@ export const SearchScreen = (): JSX.Element => {
   }, []);
 
   const handleWorkoutClick = (workout: Workout) => {
-    navigate('/workout-details', { state: { workout } });
+    navigate(`/workout-details/${workout.id}`);
   };
-
+  
   return (
     <motion.div 
       className="bg-white min-h-screen p-6"
@@ -57,34 +57,28 @@ export const SearchScreen = (): JSX.Element => {
         </div>
 
         <div className="space-y-4">
-          <h2 className="font-medium">Popular Searches</h2>
-          <div className="flex flex-wrap gap-2">
-            {["Yoga", "HIIT", "Cardio", "Strength", "Pilates"].map((term) => (
-              <Button
-                key={term}
-                variant="outline"
-                size="sm"
-                className="rounded-full"
-              >
-                {term}
-              </Button>
-            ))}
-          </div>
-          <h2 className="font-medium">Workouts</h2>
-          <div className="flex flex-wrap gap-2">
-            {workouts.map((workout) => (
-              <div key={workout.id} className="p-4 bg-gray-100 rounded-lg cursor-pointer flex justify-between items-center" onClick={() => handleWorkoutClick(workout)}>
-                <div>
-                  <h3 className="font-semibold">{workout.name}</h3>
-                  <p>{workout.description}</p>
-                </div>
-                <Button variant="outline" size="sm" className="rounded-full">
-                  View
-                </Button>
-              </div>
-            ))}
-          </div>
+  <h2 className="font-medium">
+    Workouts ({workouts.length})
+  </h2>
+  <div className="flex flex-wrap gap-2">
+    {workouts.map((workout) => (
+      <div
+        key={workout.id}
+        className="p-4 bg-gray-100 rounded-lg cursor-pointer flex justify-between items-center"
+        onClick={() => handleWorkoutClick(workout)}
+      >
+        <div>
+          <h3 className="font-semibold">{workout.name}</h3>
+          <p>{workout.description}</p>
         </div>
+        <Button variant="outline" size="sm" className="rounded-full">
+          View
+        </Button>
+      </div>
+    ))}
+  </div>
+</div>
+
       </div>
     </motion.div>
   );

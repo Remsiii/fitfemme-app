@@ -1,72 +1,84 @@
-import { ArrowLeftCircleIcon, Loader2Icon } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "../components/ui/avatar";
 import { AvatarSelector } from "@/components/AvatarSelector";
 
 interface UserProfile {
   name: string;
   email: string;
+  avatar_url?: string;
   age?: string;
   weight?: string;
   height?: string;
   goal?: string;
-  avatar_url?: string;
 }
 
 export const EditProfile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [showAvatarSelector, setShowAvatarSelector] = useState(false);
+
   const [profile, setProfile] = useState<UserProfile>({
     name: "",
     email: "",
+    avatar_url: "",
     age: "",
     weight: "",
     height: "",
     goal: "",
-    avatar_url: "",
   });
+  const [isSaving, setIsSaving] = useState(false);
+  const [showAvatarSelector, setShowAvatarSelector] = useState(false);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        // Authentifizierten Benutzer abrufen
+        const { data: authUser, error: authError } = await supabase.auth.getUser();
 
-        if (!user) {
-          navigate("/login");
-          return;
+        if (authError || !authUser?.user) {
+          throw new Error("User is not authenticated");
         }
 
-        setProfile({
-          name: user.user_metadata?.name || user.email?.split("@")[0] || "",
-          email: user.email || "",
-          age: user.user_metadata?.age || "",
-          weight: user.user_metadata?.weight || "",
-          height: user.user_metadata?.height || "",
-          goal: user.user_metadata?.goal || "",
-          avatar_url: user.user_metadata?.avatar_url || "",
-        });
+        const userId = authUser.user.id;
+
+        // Profildaten aus der Tabelle abrufen
+        const { data, error: dbError } = await supabase
+          .from("users")
+          .select("full_name, email, profile_picture_url, age, weight, height, goal")
+          .eq("id", userId)
+          .maybeSingle();
+
+        if (dbError) throw dbError;
+
+        if (data) {
+          // Profilzustand aktualisieren, wenn Daten existieren
+          setProfile({
+            name: data.full_name || "",
+            email: data.email || "",
+            avatar_url: data.profile_picture_url || "",
+            age: data.age || "",
+            weight: data.weight || "",
+            height: data.height || "",
+            goal: data.goal || "",
+          });
+        } else {
+          // Falls keine Daten existieren, nur die E-Mail setzen
+          setProfile((prev) => ({
+            ...prev,
+            email: authUser.user.email || "",
+          }));
+        }
       } catch (error) {
-        console.error("Error fetching profile:", error);
+        console.error("Error fetching user profile:", error);
         toast({
           variant: "destructive",
           title: "Error",
           description: "Could not load profile. Please try again.",
         });
-      } finally {
-        setIsLoading(false);
       }
     };
 
@@ -76,30 +88,45 @@ export const EditProfile = () => {
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      const { error } = await supabase.auth.updateUser({
-        data: {
-          name: profile.name,
-          age: profile.age,
-          weight: profile.weight,
-          height: profile.height,
-          goal: profile.goal,
-          avatar_url: profile.avatar_url,
-        },
-      });
 
-      if (error) throw error;
+      const { data: authUser, error: authError } = await supabase.auth.getUser();
+
+      if (authError || !authUser?.user) {
+        throw new Error("User is not authenticated");
+      }
+
+      const userId = authUser.user.id;
+
+      // Benutzer in der Tabelle speichern oder aktualisieren
+      const { error: dbError } = await supabase
+        .from("users")
+        .upsert({
+          id: userId,
+          full_name: profile.name,
+          email: profile.email,
+          profile_picture_url: profile.avatar_url || "",
+          age: profile.age || null,
+          weight: profile.weight || null,
+          height: profile.height || null,
+          goal: profile.goal || null,
+          updated_at: new Date().toISOString(),
+          password_hash: "",
+        });
+
+      if (dbError) throw dbError;
 
       toast({
         title: "Success",
-        description: "Profile updated successfully",
+        description: "Profile saved successfully.",
       });
+
       navigate("/profile");
     } catch (error) {
-      console.error("Error updating profile:", error);
+      console.error("Error saving profile:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to update profile. Please try again.",
+        description: "Failed to save profile. Please try again.",
       });
     } finally {
       setIsSaving(false);
@@ -107,16 +134,8 @@ export const EditProfile = () => {
   };
 
   const handleAvatarChange = (url: string) => {
-    setProfile(prev => ({ ...prev, avatar_url: url }));
+    setProfile((prev) => ({ ...prev, avatar_url: url }));
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2Icon className="w-8 h-8 animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="bg-white flex flex-col min-h-screen w-full max-w-[375px] mx-auto relative">
@@ -128,20 +147,19 @@ export const EditProfile = () => {
           className="bg-[#f7f8f8] rounded-lg"
           onClick={() => navigate(-1)}
         >
-          <ArrowLeftCircleIcon className="w-4 h-4" />
+          Back
         </Button>
         <span className="font-bold text-base">Edit Profile</span>
         <div className="w-8" /> {/* Spacer for alignment */}
       </header>
 
-      {/* Main Content with Padding Bottom for Navigation */}
+      {/* Main Content */}
       <main className="flex-1 px-8 pb-20 overflow-y-auto">
-        <div className="flex flex-col px-8 gap-8">
+        <div className="space-y-6">
           <div className="flex flex-col items-center gap-6">
-            <Avatar className="w-24 h-24">
-              <AvatarImage src={profile.avatar_url} />
-              <AvatarFallback>{profile.name?.charAt(0)}</AvatarFallback>
-            </Avatar>
+            <div className="w-24 h-24">
+              <img src={profile.avatar_url} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+            </div>
             <Button 
               variant="outline" 
               size="sm"
@@ -151,69 +169,68 @@ export const EditProfile = () => {
             </Button>
           </div>
 
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                value={profile.name}
-                onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                placeholder="Enter your name"
-              />
-            </div>
+          <AvatarSelector
+            open={showAvatarSelector}
+            onOpenChange={setShowAvatarSelector}
+            onAvatarChange={handleAvatarChange}
+          />
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                value={profile.email}
-                disabled
-                className="bg-gray-50"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              value={profile.name}
+              onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+              placeholder="Enter your name"
+            />
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="age">Age</Label>
-              <Input
-                id="age"
-                value={profile.age}
-                onChange={(e) => setProfile({ ...profile, age: e.target.value })}
-                placeholder="Enter your age"
-                type="number"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" value={profile.email} disabled className="bg-gray-50" />
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="height">Height (cm)</Label>
-              <Input
-                id="height"
-                value={profile.height}
-                onChange={(e) => setProfile({ ...profile, height: e.target.value })}
-                placeholder="Enter your height"
-                type="number"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="age">Age</Label>
+            <Input
+              id="age"
+              value={profile.age}
+              onChange={(e) => setProfile({ ...profile, age: e.target.value })}
+              placeholder="Enter your age"
+              type="number"
+            />
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="weight">Weight (kg)</Label>
-              <Input
-                id="weight"
-                value={profile.weight}
-                onChange={(e) => setProfile({ ...profile, weight: e.target.value })}
-                placeholder="Enter your weight"
-                type="number"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="height">Height (cm)</Label>
+            <Input
+              id="height"
+              value={profile.height}
+              onChange={(e) => setProfile({ ...profile, height: e.target.value })}
+              placeholder="Enter your height"
+              type="number"
+            />
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="goal">Fitness Goal</Label>
-              <Input
-                id="goal"
-                value={profile.goal}
-                onChange={(e) => setProfile({ ...profile, goal: e.target.value })}
-                placeholder="Enter your fitness goal"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="weight">Weight (kg)</Label>
+            <Input
+              id="weight"
+              value={profile.weight}
+              onChange={(e) => setProfile({ ...profile, weight: e.target.value })}
+              placeholder="Enter your weight"
+              type="number"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="goal">Fitness Goal</Label>
+            <Input
+              id="goal"
+              value={profile.goal}
+              onChange={(e) => setProfile({ ...profile, goal: e.target.value })}
+              placeholder="Enter your fitness goal"
+            />
           </div>
 
           <Button
@@ -221,18 +238,9 @@ export const EditProfile = () => {
             onClick={handleSave}
             disabled={isSaving}
           >
-            {isSaving ? (
-              <Loader2Icon className="w-4 h-4 mr-2 animate-spin" />
-            ) : null}
-            Save Changes
+            {isSaving ? "Saving..." : "Save Changes"}
           </Button>
         </div>
-
-        <AvatarSelector
-          open={showAvatarSelector}
-          onOpenChange={setShowAvatarSelector}
-          onAvatarChange={handleAvatarChange}
-        />
       </main>
     </div>
   );

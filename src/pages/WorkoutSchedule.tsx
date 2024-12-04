@@ -1,9 +1,8 @@
 import { CameraIcon, ZapOffIcon } from "lucide-react";
-import React from "react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 
-export const TakePhoto = (): JSX.Element => {
+export const WorkoutSchedule = (): JSX.Element => {
   const thumbnails = [
     {
       id: 1,

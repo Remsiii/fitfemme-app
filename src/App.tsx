@@ -16,11 +16,12 @@ import { Notification } from "./Notification";
 import { BMICalculator } from './components/BMICalculator';
 import { Toaster } from "@/components/ui/toaster";
 import { WorkoutDetails } from "./pages/WorkoutDetails";
-import { TakePhoto } from "./pages/WorkoutSchedule";
+import { TakePhoto } from "./pages/progress/TakePhoto";
 import { ProgressPhoto } from "./pages/progress/ProgressPhoto";
 import { CompareResult } from "./pages/progress/CompareResult2";
 import { Profile2 } from "./pages/Profile2";
 import { EditProfile } from "./pages/EditProfile";
+import LanguageSettings from './pages/LanguageSettings';
 
 function App() {
   return (
@@ -44,7 +45,8 @@ function App() {
           <Route path="/profile" element={<Profile2 />} />
           <Route path="/profile/edit" element={<EditProfile />} />
           <Route path="/notification-screen" element={<NotificationScreen />} />
-          <Route path="/workout-details" element={<WorkoutDetails />} />
+          <Route path="/workout-details/:workoutId" element={<WorkoutDetails />} />
+          <Route path="/language-settings" element={<LanguageSettings />} />
         </Routes>
       </main>
       <BottomNavigation />

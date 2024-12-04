@@ -63,7 +63,8 @@ export const Home = (): JSX.Element => {
   const [currentHeartRate, setCurrentHeartRate] = useState(72);
   const [user, setUser] = useState<any>(null);
   const [userName, setUserName] = useState<string>('');
-
+  const navigate = useNavigate();
+  
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
