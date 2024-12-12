@@ -22,6 +22,8 @@ import { supabase } from "@/lib/supabase";
 import { Workout } from "@/types/Workout";
 import { WaterIntakeManager } from './components/WaterIntakeManager';
 import { BMIManager } from './components/BMIManager';
+import { useTranslation } from 'react-i18next';
+
 
 interface WaterIntake {
   time: string;
@@ -60,6 +62,7 @@ interface BMIHistory {
 }
 
 export const Home = (): JSX.Element => {
+  const { t } = useTranslation();
   const [currentHeartRate, setCurrentHeartRate] = useState(72);
   const [user, setUser] = useState<any>(null);
   const [userName, setUserName] = useState<string>('');
@@ -88,12 +91,16 @@ export const Home = (): JSX.Element => {
     fetchUserProfile();
   }, []);
 
+  const navigateToAppleWatchOverview = () => {
+    navigate('/apple-watch-overview');
+  };
+
   return (
     <div className="bg-white flex flex-row justify-center w-full">
       <div className="bg-white w-[375px] h-[1527px] relative">
         <header className="flex justify-between items-center px-8 pt-10">
           <div className="flex flex-col">
-            <span className="text-gray-2 text-sm">Welcome Back,</span>
+            <span className="text-gray-2 text-sm">{t('Welcome Back')}</span>
             <span className="text-black-color text-xl font-semibold">
               {userName}
             </span>
@@ -111,26 +118,26 @@ export const Home = (): JSX.Element => {
 
         <Card className="mx-8 mt-6 bg-gradient-to-b from-[#92A3FD] to-[#9DCEFF] border-none">
           <CardContent className="flex justify-between items-center p-4">
-            <span className="text-black font-medium">Today Target</span>
+            <span className="text-black font-medium">{t('Today Target')}</span>
             <Button
               variant="ghost"
               className="text-white hover:text-white hover:bg-white/20"
             >
-              Check
+              {t('Check')}
             </Button>
           </CardContent>
         </Card>
 
         <div className="px-8 mt-6">
           <h2 className="text-black-color font-semibold mb-4">
-            ActivityIcon Status
+            {t('ActivityIcon Status')}
           </h2>
 
           <Card className="bg-gradient-to-b from-[#92A3FD] to-[#9DCEFF] border-none text-white mb-6">
             <CardContent className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h4 className="font-medium text-black-color mb-2">Ritm Cardiac</h4>
+                  <h4 className="font-medium text-black-color mb-2">{t('Ritm Cardiac')}</h4>
                   <HeartRateDisplay onHeartRateChange={setCurrentHeartRate} />
                 </div>
                 <div className="w-[50px] h-[50px] rounded-[25px] bg-gradient-to-b from-[#92A3FD] to-[#9DCEFF] flex items-center justify-center">
@@ -171,7 +178,7 @@ export const Home = (): JSX.Element => {
           <div className="grid grid-cols-2 gap-4">
             <Card className="shadow-card-shadow">
               <CardContent className="p-5">
-                <h4 className="font-medium text-black-color mb-1">Sleep</h4>
+                <h4 className="font-medium text-black-color mb-1">{t('Sleep')}</h4>
                 <p className="text-black">
                   <span className="text-sm">8</span>
                   <span className="text-xs">h </span>
@@ -208,6 +215,64 @@ export const Home = (): JSX.Element => {
             </Card>
           </div>
         </div>
+
+        <div className="px-8 mt-8">
+  <div className="border-t border-gray-200 my-4"></div> {/* Horizontale Trennlinie */}
+
+  <div className="grid grid-cols-3 gap-4">
+    {/* Beispiel für ein Icon für Water Intake */}
+    <div className="flex flex-col items-center">
+      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+      <img 
+      src="icons/water.svg" 
+      alt="Water Tracker Icon" 
+      className="w-6 h-6"
+    />
+      </div>
+      <p className="text-sm mt-2 text-gray-700 text-center">
+        {t("Water Intake")}
+      </p>
+    </div>
+
+    {/* Beispiel für ein Icon für Period Tracker */}
+    <div className="flex flex-col items-center">
+  <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+    <img 
+      src="icons/period.svg" 
+      alt="Period Tracker Icon" 
+      className="w-6 h-6"
+    />
+  </div>
+  <p className="text-sm mt-2 text-gray-700 text-center">Period Tracker</p>
+</div>
+
+
+    {/* Beispiel für ein Icon für Steps Tracking */}
+    <div className="flex flex-col items-center">
+      <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+        <svg
+          className="w-6 h-6 text-green-600"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 3v12m0 0l3-3m-3 3l-3-3"
+          />
+        </svg>
+      </div>
+      <p className="text-sm mt-2 text-gray-700 text-center">
+        {t("Steps Tracker")}
+      </p>
+    </div>
+  </div>
+  <div className="border-t border-gray-200 my-4"></div> {/* Horizontale Trennlinie */}
+</div>
+
 
         <div className="px-8 mt-8">
           <div className="flex justify-between items-center mb-4">
@@ -281,6 +346,16 @@ export const Home = (): JSX.Element => {
         </div>
 
         <div className="px-8 mt-8">
+          <div className="flex flex-col items-center" onClick={navigateToAppleWatchOverview}>
+            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+              <img 
+                src="icons/apple_watch.png" 
+                alt="Apple Watch Icon" 
+                className="w-16 h-16"
+              />
+            </div>
+            {/* <p className="text-sm mt-2 text-gray-700 text-center">Apple Watch Übersicht</p> */}
+          </div>
           <WaterIntakeManager />
           <BMIManager />
         </div>

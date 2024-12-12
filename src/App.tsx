@@ -22,6 +22,7 @@ import { CompareResult } from "./pages/progress/CompareResult2";
 import { Profile2 } from "./pages/Profile2";
 import { EditProfile } from "./pages/EditProfile";
 import LanguageSettings from './pages/LanguageSettings';
+import AppleWatchOverview from "./pages/AppleWatchOverview";
 
 function App() {
   return (
@@ -47,6 +48,7 @@ function App() {
           <Route path="/notification-screen" element={<NotificationScreen />} />
           <Route path="/workout-details/:workoutId" element={<WorkoutDetails />} />
           <Route path="/language-settings" element={<LanguageSettings />} />
+          <Route path="/apple-watch-overview" element={<AppleWatchOverview />} />
         </Routes>
       </main>
       <BottomNavigation />

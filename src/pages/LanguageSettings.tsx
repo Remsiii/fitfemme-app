@@ -8,30 +8,57 @@ const LanguageSettings = (): JSX.Element => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
-  const userId = "258c3774-017d-4c6e-a558-58a0f963fd19"; // Replace with actual user ID logic
+  const [userId, setUserId] = React.useState<string>('');
   const [selectedLanguage, setSelectedLanguage] = React.useState<string>('en');
 
   React.useEffect(() => {
-    const fetchUserLanguage = async () => {
-      const { data, error } = await supabase
-        .from('users')
-        .select('language')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching language:', error.message);
-        return;
-      }
-
-      if (data) {
-        setSelectedLanguage(data.language || 'en');
-        i18n.changeLanguage(data.language || 'en');
+    const fetchUserProfile = async () => {
+      try {
+        // Authentifizierten Benutzer abrufen
+        const { data: authUser, error: authError } = await supabase.auth.getUser();
+  
+        if (authError || !authUser?.user) {
+          navigate("/login");
+          throw new Error("User is not authenticated");
+        }
+  
+        setUserId(authUser.user.id); // userId wird hier gesetzt
+      } catch (error) {
+        console.error("Error fetching profile:", error);
       }
     };
-
+  
+    fetchUserProfile();
+  }, [navigate]);
+  
+  React.useEffect(() => {
+    if (!userId) return; // Abbrechen, wenn userId noch nicht gesetzt ist
+  
+    const fetchUserLanguage = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('language')
+          .eq('id', userId)
+          .maybeSingle();
+  
+        if (error) {
+          console.error('Error fetching language:', error.message);
+          return;
+        }
+  
+        if (data) {
+          setSelectedLanguage(data.language || 'en');
+          i18n.changeLanguage(data.language || 'en');
+        }
+      } catch (error) {
+        console.error("Error fetching user language:", error);
+      }
+    };
+  
     fetchUserLanguage();
-  }, [userId, i18n]);
+  }, [userId, i18n]); // Lauscht auf Änderungen von userId
+  
 
   const handleLanguageChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newLanguage = event.target.value;

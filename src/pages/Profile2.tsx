@@ -1,14 +1,10 @@
 import {
-  ActivityIcon,
   ArrowLeftCircleIcon,
   BarChart2Icon,
-  BellDotIcon,
   BugIcon,
-  CameraIcon,
   Clock10Icon,
   FileTextIcon,
   HelpCircleIcon,
-  HomeIcon,
   InfoIcon,
   LogOutIcon,
   Loader2Icon,
@@ -47,53 +43,22 @@ interface UserProfile {
   age?: string;
   weight?: string;
   height?: string;
+  avatar_url?: string;
   goal?: string;
 }
 
 const statsData = [
-  { value: "180cm", label: "Height" },
-  { value: "65kg", label: "Weight" },
-  { value: "22yo", label: "Age" },
+  { value: "", label: "Height" },
+  { value: "", label: "Weight" },
+  { value: "", label: "Age" },
 ];
 
-const accountItems = [
-  {
-    icon: <User2Icon className="w-5 h-5 text-gray-1" />,
-    label: "Personal Data",
-  },
-  {
-    icon: <FileTextIcon className="w-5 h-5 text-gray-1" />,
-    label: "Achievement",
-  },
-  {
-    icon: <Clock10Icon className="w-5 h-5 text-gray-1" />,
-    label: "ActivityIcon History",
-  },
-  {
-    icon: <BarChart2Icon className="w-5 h-5 text-gray-1" />,
-    label: "Workout Progress",
-  },
-];
 
-const otherItems = [
-  {
-    icon: <MailCheckIcon className="w-5 h-5 text-gray-1" />,
-    label: "Contact Us",
-  },
-  {
-    icon: <ShieldAlertIcon className="w-5 h-5 text-gray-1" />,
-    label: "Privacy Policy",
-  },
-  {
-    icon: <Settings2Icon className="w-5 h-5 text-gray-1" />,
-    label: "Settings",
-  },
-];
 
 export const Profile2 = (): JSX.Element => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -105,6 +70,7 @@ export const Profile2 = (): JSX.Element => {
     height: "",
     goal: "",
   });
+
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -161,38 +127,40 @@ export const Profile2 = (): JSX.Element => {
   }, []);
   
 
-  const handleSaveProfile = async () => {
-    if (!user) return;
+  const accountItems = [
+    {
+      icon: <User2Icon className="w-5 h-5 text-gray-1" />,
+      label: t('Personal Data'),
+    },
+    {
+      icon: <FileTextIcon className="w-5 h-5 text-gray-1" />,
+      label: t('Achievement'),
+    },
+    {
+      icon: <Clock10Icon className="w-5 h-5 text-gray-1" />,
+      label: t('ActivityIcon History'),
+    },
+    {
+      icon: <BarChart2Icon className="w-5 h-5 text-gray-1" />,
+      label: t('Workout Progress'),
+    },
+  ];
+  
+  const otherItems = [
+    {
+      icon: <MailCheckIcon className="w-5 h-5 text-gray-1" />,
+      label: t('Contact Us'),
+    },
+    {
+      icon: <ShieldAlertIcon className="w-5 h-5 text-gray-1" />,
+      label: t('Privacy Policy'),
+    },
+    {
+      icon: <Settings2Icon className="w-5 h-5 text-gray-1" />,
+      label: t('Settings'),
+    },
+  ];
 
-    try {
-      setIsSaving(true);
-      const { error } = await supabase.auth.updateUser({
-        data: {
-          name: profile.name,
-          age: profile.age,
-          weight: profile.weight,
-          height: profile.height,
-          goal: profile.goal,
-        },
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Profile Updated",
-        description: "Your profile has been successfully updated!",
-      });
-    } catch (error) {
-      console.error("Profile update error:", error);
-      toast({
-        variant: "destructive",
-        title: "Update Failed",
-        description: "Could not update profile. Please try again.",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const handleLogout = async () => {
     try {
@@ -208,9 +176,6 @@ export const Profile2 = (): JSX.Element => {
     }
   };
 
-  const handleLanguageChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    i18n.changeLanguage(event.target.value);
-  };
 
   if (isLoading) {
     return (
@@ -272,15 +237,15 @@ export const Profile2 = (): JSX.Element => {
             <AvatarFallback>{profile.name?.charAt(0)}</AvatarFallback>
           </Avatar>
           <div className="mt-4 text-center">
-            <h5 className="font-semibold text-xl">{profile.name}</h5>
-            <p className="text-gray-500 text-sm">{profile.email}</p>
+            <h5 className="font-semibold text-xl">{t('Edit Profile')}</h5>
+            <p className="text-gray-500 text-sm">{t('Email')}</p>
           </div>
           <Button
             variant="outline"
             className="mt-4"
             onClick={() => navigate("/profile/edit")}
           >
-            Edit Profile
+            {t('Edit Profile')}
           </Button>
 
           </div>
