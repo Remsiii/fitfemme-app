@@ -1,12 +1,12 @@
 import { ArrowRightCircleIcon } from "lucide-react";
-import { Button } from "./components/ui/button";
-import { CardContent } from "./components/ui/card";
+import { Button } from "@/components/ui/button";
+import { CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
 export const Onboarding1 = (): JSX.Element => {
-    const navigate = useNavigate();
-    
+  const navigate = useNavigate();
+
   return (
     <main className="bg-white flex justify-center items-center w-screen h-screen overflow-hidden">
       <motion.div
@@ -55,7 +55,7 @@ export const Onboarding1 = (): JSX.Element => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
           >
-            <motion.h1 
+            <motion.h1
               className="font-bold text-xl text-black text-center"
               animate={{
                 y: [0, -5, 0],
@@ -68,7 +68,7 @@ export const Onboarding1 = (): JSX.Element => {
             >
               Track Your Goal
             </motion.h1>
-            <motion.p 
+            <motion.p
               className="mt-6 text-center text-gray-500 text-sm"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -91,7 +91,7 @@ export const Onboarding1 = (): JSX.Element => {
             >
               <ArrowRightCircleIcon className="h-5 w-5 text-white rotate-180" />
             </Button>
-            
+
             <Button
               className="w-[60px] h-[60px] rounded-full bg-gradient-to-b from-[#9293FD] to-[#9DCEFF] flex items-center justify-center"
               variant="default"

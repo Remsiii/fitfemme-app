@@ -21,13 +21,13 @@ export const WorkoutDetails = (): JSX.Element => {
   const [workoutDetails, setWorkoutDetails] = useState<Workout | null>(null);
   const [equipmentData, setEquipmentData] = useState<Equipment[]>([]);
   const [exercisesData, setExercisesData] = useState<Exercise[]>([]);
-  
+
 
   type Equipment = {
     name: string;
     image_url: string;
   };
-  
+
   type Exercise = {
     set_number: number;
     name: string;
@@ -35,7 +35,7 @@ export const WorkoutDetails = (): JSX.Element => {
     reps?: string;
     image_url: string;
   };
-  
+
   type Workout = {
     id: number;
     name: string;
@@ -49,7 +49,7 @@ export const WorkoutDetails = (): JSX.Element => {
     workout_equipment: { equipment: Equipment }[];
     exercises: Exercise[];
   };
-  
+
 
   useEffect(() => {
     const fetchWorkoutDetails = async () => {

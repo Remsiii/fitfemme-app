@@ -1,8 +1,8 @@
 import { ArrowLeftCircleIcon, MoreVerticalIcon } from "lucide-react";
-import { Avatar } from "./components/ui/avatar";
-import { Button } from "./components/ui/button";
-import { Card, CardContent } from "./components/ui/card";
-import { Separator } from "./components/ui/separator";
+import { Avatar } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
 
 const notifications = [

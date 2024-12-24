@@ -8,11 +8,11 @@ import { ProfileScreen } from "./pages/ProfileScreen";
 import { LoginScreen } from "./pages/LoginScreen";
 import { NotificationScreen } from "./HomeScreen";
 import { BottomNavigation } from "./components/BottomNavigation";
-import { Onboarding1 } from "./Onboarding1";
-import { Onboarding2 } from "./Onboarding2";
+import { Onboarding1 } from "./pages/startingScreen/Onboarding1";
+import { Onboarding2 } from "./pages/startingScreen/Onboarding2";
 import { WorkoutTracker } from "./WorkoutTracker";
 import { WelcomeScreen } from "./WelcomeScreen";
-import { Notification } from "./Notification";
+import { Notification } from "./pages/Notification";
 import { BMICalculator } from './components/BMICalculator';
 import { Toaster } from "@/components/ui/toaster";
 import { WorkoutDetails } from "./pages/WorkoutDetails";
@@ -23,32 +23,44 @@ import { Profile2 } from "./pages/Profile2";
 import { EditProfile } from "./pages/EditProfile";
 import LanguageSettings from './pages/LanguageSettings';
 import AppleWatchOverview from "./pages/AppleWatchOverview";
+import PrivateRoute from "./components/PrivateRoute";
+import { WaterIntake } from "./pages/WaterIntake";
+import { PeriodTracker } from "./pages/PeriodTracker";
+import { AdminPage } from "./pages/Admin/AdminPage";
 
 function App() {
   return (
-    <div className="bg-white flex flex-col min-h-screen w-full max-w-[375px mx-auto relative">
+    <div className="bg-white flex flex-col min-h-screen w-full max-w-[375px] mx-auto relative">
       <main className="flex-1 overflow-y-auto pb-20">
         <Routes>
+          {/* Öffentliche Routen */}
           <Route path="/" element={<WelcomeScreen />} />
           <Route path="/login" element={<LoginScreen />} />
           <Route path="/onboarding1" element={<Onboarding1 />} />
           <Route path="/onboarding2" element={<Onboarding2 />} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/workouttracker" element={<WorkoutTracker />} />
-          <Route path="/notifications" element={<Notification />} />
-          <Route path="/bmi-calculator" element={<BMICalculator onBMICalculated={() => {}} onClose={() => {}} />} />
-          <Route path="/activity" element={<ActivityScreen />} />
-          <Route path="/camera" element={<TakePhoto />} />
-          <Route path="/progressPhoto" element={<ProgressPhoto />} />
-          <Route path="/workout-tracker" element={<WorkoutDetails />} />
-          <Route path="/compareResult" element={<CompareResult />} />
-          <Route path="/search" element={<SearchScreen />} />
-          <Route path="/profile" element={<Profile2 />} />
-          <Route path="/profile/edit" element={<EditProfile />} />
-          <Route path="/notification-screen" element={<NotificationScreen />} />
-          <Route path="/workout-details/:workoutId" element={<WorkoutDetails />} />
-          <Route path="/language-settings" element={<LanguageSettings />} />
-          <Route path="/apple-watch-overview" element={<AppleWatchOverview />} />
+
+          {/* Geschützte Routen */}
+          <Route path="/home" element={<PrivateRoute component={Home} />} />
+          <Route path="/workouttracker" element={<PrivateRoute component={WorkoutTracker} />} />
+          <Route path="/notifications" element={<PrivateRoute component={Notification} />} />
+          <Route path="/bmi-calculator" element={<PrivateRoute component={BMICalculator} />} />
+          <Route path="/activity" element={<PrivateRoute component={ActivityScreen} />} />
+          <Route path="/camera" element={<PrivateRoute component={TakePhoto} />} />
+          <Route path="/progressPhoto" element={<PrivateRoute component={ProgressPhoto} />} />
+          <Route path="/workout-tracker" element={<PrivateRoute component={WorkoutDetails} />} />
+          <Route path="/compareResult" element={<PrivateRoute component={CompareResult} />} />
+          <Route path="/search" element={<PrivateRoute component={SearchScreen} />} />
+          <Route path="/profile" element={<PrivateRoute component={Profile2} />} />
+          <Route path="/profile/edit" element={<PrivateRoute component={EditProfile} />} />
+          <Route path="/waterIntake" element={<PrivateRoute component={WaterIntake} />} />
+          <Route path="/periodTracker" element={<PrivateRoute component={PeriodTracker} />} />
+          <Route path="/notification-screen" element={<PrivateRoute component={NotificationScreen} />} />
+          <Route path="/workout-details/:workoutId" element={<PrivateRoute component={WorkoutDetails} />} />
+          <Route path="/language-settings" element={<PrivateRoute component={LanguageSettings} />} />
+          <Route path="/apple-watch-overview" element={<PrivateRoute component={AppleWatchOverview} />} />
+
+          {/* Admin */}
+          <Route path="/adminPage" element={<PrivateRoute component={AdminPage} />} />
         </Routes>
       </main>
       <BottomNavigation />

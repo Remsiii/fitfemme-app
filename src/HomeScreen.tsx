@@ -24,13 +24,6 @@ import { WaterIntakeManager } from './components/WaterIntakeManager';
 import { BMIManager } from './components/BMIManager';
 import { useTranslation } from 'react-i18next';
 
-
-interface WaterIntake {
-  time: string;
-  amount: number;
-  timestamp: number; // for sorting
-}
-
 const workoutData = [
   {
     title: "Fullbody Workout",
@@ -55,44 +48,67 @@ const workoutData = [
   },
 ];
 
-interface BMIHistory {
-  value: number;
-  date: string;
-  category: string;
+interface UserProfile {
+  name: string;
 }
+
 
 export const Home = (): JSX.Element => {
   const { t } = useTranslation();
   const [currentHeartRate, setCurrentHeartRate] = useState(72);
-  const [user, setUser] = useState<any>(null);
-  const [userName, setUserName] = useState<string>('');
   const navigate = useNavigate();
-  
+  const [profile, setProfile] = useState<UserProfile>({
+    name: "",
+  });
+
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (user) {
-          setUser(user);
-          
-          // Prioritize name from user metadata, fallback to email username
-          const displayName = user.user_metadata?.name || 
-                              user.email?.split('@')[0] || 
-                              "User";
-          
-          setUserName(displayName);
+        const { data: authUser, error: authError } = await supabase.auth.getUser();
+
+        if (authError || !authUser?.user) {
+          navigate("/login");
+          throw new Error("User is not authenticated");
         }
+
+        const userId = authUser.user.id;
+
+        const { data: profileData, error: dbError } = await supabase
+          .from("users")
+          .select("full_name")
+          .eq("id", userId)
+          .single();
+
+        if (dbError) throw dbError;
+
+        setProfile({
+          name: profileData.full_name || "New User",
+        });
+
+        // Hier speicherst du den Namen im Supabase-User-Metadata
+        await supabase.auth.updateUser({
+          data: { metadata_name: profileData.full_name },
+        });
       } catch (error) {
-        console.error("Error fetching user:", error);
+        console.error("Error fetching profile:", error);
+      } finally {
       }
     };
 
     fetchUserProfile();
   }, []);
 
+
   const navigateToAppleWatchOverview = () => {
     navigate('/apple-watch-overview');
+  };
+
+  const navigateToWaterIntake = () => {
+    navigate("/waterIntake");
+  };
+
+  const navigateToPeriodTracker = () => {
+    navigate("/periodTracker");
   };
 
   return (
@@ -102,12 +118,12 @@ export const Home = (): JSX.Element => {
           <div className="flex flex-col">
             <span className="text-gray-2 text-sm">{t('Welcome Back')}</span>
             <span className="text-black-color text-xl font-semibold">
-              {userName}
+              {profile.name}
             </span>
           </div>
-          <Button 
-            variant="outline" 
-            size="icon" 
+          <Button
+            variant="outline"
+            size="icon"
             className="w-10 h-10 relative"
             onClick={() => navigate('/notifications')}
           >
@@ -217,61 +233,76 @@ export const Home = (): JSX.Element => {
         </div>
 
         <div className="px-8 mt-8">
-  <div className="border-t border-gray-200 my-4"></div> {/* Horizontale Trennlinie */}
+          <div className="border-t border-gray-200 my-4"></div> {/* Horizontale Trennlinie */}
+          <div className="flex flex-col items-center">
+            <div className="grid grid-cols-3 gap-4">
+              {/* Water Intake */}
+              <div className="flex flex-col items-center">
+                <div
+                  className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-200 focus:ring focus:ring-blue-300 transition duration-200"
+                  onClick={navigateToWaterIntake}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") navigateToWaterIntake();
+                  }}
+                >
+                  <img
+                    src="icons/water.svg"
+                    alt="Water Tracker Icon"
+                    className="w-8 h-8"
+                  />
+                </div>
+                <p className="text-sm mt-2 text-gray-700 text-center">Water Intake</p>
+              </div>
 
-  <div className="grid grid-cols-3 gap-4">
-    {/* Beispiel für ein Icon für Water Intake */}
-    <div className="flex flex-col items-center">
-      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-      <img 
-      src="icons/water.svg" 
-      alt="Water Tracker Icon" 
-      className="w-6 h-6"
-    />
-      </div>
-      <p className="text-sm mt-2 text-gray-700 text-center">
-        {t("Water Intake")}
-      </p>
-    </div>
-
-    {/* Beispiel für ein Icon für Period Tracker */}
-    <div className="flex flex-col items-center">
-  <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-    <img 
-      src="icons/period.svg" 
-      alt="Period Tracker Icon" 
-      className="w-6 h-6"
-    />
-  </div>
-  <p className="text-sm mt-2 text-gray-700 text-center">Period Tracker</p>
-</div>
+              {/* Period Tracker */}
+              <div className="flex flex-col items-center">
+                <div
+                  className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center cursor-pointer hover:bg-red-200 focus:ring focus:ring-red-300 transition duration-200"
+                  onClick={navigateToPeriodTracker}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") navigateToPeriodTracker();
+                  }}
+                >
+                  <img
+                    src="icons/period.svg"
+                    alt="Period Tracker Icon"
+                    className="w-6 h-6"
+                  />
+                </div>
+                <p className="text-sm mt-2 text-gray-700 text-center">Period Tracker</p>
+              </div>
+            </div>
 
 
-    {/* Beispiel für ein Icon für Steps Tracking */}
-    <div className="flex flex-col items-center">
-      <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-        <svg
-          className="w-6 h-6 text-green-600"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M12 3v12m0 0l3-3m-3 3l-3-3"
-          />
-        </svg>
-      </div>
-      <p className="text-sm mt-2 text-gray-700 text-center">
-        {t("Steps Tracker")}
-      </p>
-    </div>
-  </div>
-  <div className="border-t border-gray-200 my-4"></div> {/* Horizontale Trennlinie */}
-</div>
+            {/* Beispiel für ein Icon für Steps Tracking */}
+            <div className="flex flex-col items-center">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                <svg
+                  className="w-6 h-6 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 3v12m0 0l3-3m-3 3l-3-3"
+                  />
+                </svg>
+              </div>
+              <p className="text-sm mt-2 text-gray-700 text-center">
+                {t("Steps Tracker")}
+              </p>
+            </div>
+          </div>
+          <div className="border-t border-gray-200 my-4"></div> {/* Horizontale Trennlinie */}
+        </div>
 
 
         <div className="px-8 mt-8">
@@ -346,21 +377,30 @@ export const Home = (): JSX.Element => {
         </div>
 
         <div className="px-8 mt-8">
-          <div className="flex flex-col items-center" onClick={navigateToAppleWatchOverview}>
-            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-              <img 
-                src="icons/apple_watch.png" 
-                alt="Apple Watch Icon" 
-                className="w-16 h-16"
+          <div className="flex flex-col items-center">
+            <div
+              className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 focus:ring focus:ring-gray-300 transition duration-200"
+              onClick={navigateToAppleWatchOverview}
+              role="button"
+              tabIndex={0} // Ermöglicht Tastatur-Navigation
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") navigateToAppleWatchOverview();
+              }}
+            >
+              <img
+                src="icons/apple_watch.png"
+                alt="Apple Watch Icon"
+                className="w-8 h-8"
               />
             </div>
-            {/* <p className="text-sm mt-2 text-gray-700 text-center">Apple Watch Übersicht</p> */}
           </div>
           <WaterIntakeManager />
           <BMIManager />
         </div>
+
+
       </div>
-    </div>
+    </div >
   );
 };
 
@@ -389,7 +429,7 @@ export const NotificationScreen = (): JSX.Element => {
   ];
 
   return (
-    <motion.div 
+    <motion.div
       className="bg-white min-h-screen p-6"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -415,9 +455,8 @@ export const NotificationScreen = (): JSX.Element => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className={`p-4 rounded-xl shadow-sm border ${
-              notification.isNew ? 'bg-blue-50 border-blue-100' : 'bg-white border-gray-100'
-            }`}
+            className={`p-4 rounded-xl shadow-sm border ${notification.isNew ? 'bg-blue-50 border-blue-100' : 'bg-white border-gray-100'
+              }`}
           >
             <div className="flex justify-between items-start">
               <div>

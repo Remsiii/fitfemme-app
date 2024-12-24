@@ -77,25 +77,25 @@ export const Profile2 = (): JSX.Element => {
       try {
         // Authentifizierten Benutzer abrufen
         const { data: authUser, error: authError } = await supabase.auth.getUser();
-  
+
         if (authError || !authUser?.user) {
           navigate("/login");
           throw new Error("User is not authenticated");
         }
-  
+
         const userId = authUser.user.id;
-  
+
         // Profildaten aus der `users`-Tabelle abrufen
         const { data: profileData, error: dbError } = await supabase
           .from("users")
           .select("full_name, email, profile_picture_url, age, weight, height, goal")
           .eq("id", userId)
           .single();
-  
+
         if (dbError) {
           throw dbError;
         }
-  
+
         // Benutzerprofil setzen
         setProfile({
           name: profileData.full_name || "New User",
@@ -106,7 +106,7 @@ export const Profile2 = (): JSX.Element => {
           height: profileData.height || "N/A",
           goal: profileData.goal || "No specific goal",
         });
-  
+
         // Stats aktualisieren
         statsData[0].value = profileData.height ? `${profileData.height}cm` : "N/A";
         statsData[1].value = profileData.weight ? `${profileData.weight}kg` : "N/A";
@@ -122,10 +122,10 @@ export const Profile2 = (): JSX.Element => {
         setIsLoading(false);
       }
     };
-  
+
     fetchUserProfile();
   }, []);
-  
+
 
   const accountItems = [
     {
@@ -145,7 +145,7 @@ export const Profile2 = (): JSX.Element => {
       label: t('Workout Progress'),
     },
   ];
-  
+
   const otherItems = [
     {
       icon: <MailCheckIcon className="w-5 h-5 text-gray-1" />,
@@ -230,37 +230,37 @@ export const Profile2 = (): JSX.Element => {
       <main className="flex-1 px-8 pb-20 overflow-y-auto">
         <div className="flex flex-col px-8">
           <div className="flex flex-col items-center">
-          <Avatar className="w-24 h-24">
-            {profile.avatar_url && (
-              <AvatarImage src={profile.avatar_url} />
-            )}
-            <AvatarFallback>{profile.name?.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <div className="mt-4 text-center">
-            <h5 className="font-semibold text-xl">{t('Edit Profile')}</h5>
-            <p className="text-gray-500 text-sm">{t('Email')}</p>
-          </div>
-          <Button
-            variant="outline"
-            className="mt-4"
-            onClick={() => navigate("/profile/edit")}
-          >
-            {t('Edit Profile')}
-          </Button>
+            <Avatar className="w-24 h-24">
+              {profile.avatar_url && (
+                <AvatarImage src={profile.avatar_url} />
+              )}
+              <AvatarFallback>{profile.name?.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div className="mt-4 text-center">
+              <h5 className="font-semibold text-xl">{profile.name}</h5>
+              <p className="text-gray-500 text-sm">{profile.email}</p>
+            </div>
+            <Button
+              variant="outline"
+              className="mt-4"
+              onClick={() => navigate("/profile/edit")}
+            >
+              {t('Edit Profile')}
+            </Button>
 
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-4 mt-8">
-  {statsData.map((stat, index) => (
-    <Card key={index}>
-      <CardContent className="flex flex-col items-center justify-center p-4">
-        <span className="font-semibold text-lg">{stat.value}</span>
-        <span className="text-sm text-gray-500">{stat.label}</span>
-      </CardContent>
-    </Card>
-  ))}
-</div>
+          {statsData.map((stat, index) => (
+            <Card key={index}>
+              <CardContent className="flex flex-col items-center justify-center p-4">
+                <span className="font-semibold text-lg">{stat.value}</span>
+                <span className="text-sm text-gray-500">{stat.label}</span>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
 
         <div className="mt-8 space-y-6">
