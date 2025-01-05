@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { Loader2Icon } from "lucide-react";
+import { Loader2Icon, EyeIcon, LockIcon, MailCheckIcon } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 export const LoginScreen = () => {
   const navigate = useNavigate();
@@ -127,78 +128,126 @@ export const LoginScreen = () => {
     }
   };
 
+  const socialButtons = [
+    {
+      icon: "https://c.animaapp.com/4seZi3dy/img/google-logo-png-suite-everything-you-need-know-about-google-newe@2x.png",
+      alt: "Google",
+    },
+    {
+      icon: "https://c.animaapp.com/4seZi3dy/img/facebook-1.svg",
+      alt: "Facebook",
+    },
+  ];
+
   return (
     <motion.div
-      className="min-h-screen bg-white flex items-center justify-center p-4"
+      className="flex justify-center items-center min-h-screen bg-white"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
-      <Card className="w-full max-w-md p-6 space-y-6">
-        <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-bold">Welcome to FitFemme</h1>
-          <p className="text-gray-500">
-            {isSignUp ? "Create your account" : "Sign in to access your profile"}
-          </p>
-        </div>
-
-        <form className="space-y-4" onSubmit={handleAuth}>
-          <div className="space-y-2">
-            <Input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              disabled={isLoading}
-            />
-          </div>
-          <div className="space-y-2">
-            <Input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={isLoading}
-              minLength={8}
-            />
-            <p className="text-sm text-gray-500">
-              {isSignUp && "Password must be at least 8 characters long"}
+      <Card className="w-[375px] border-none shadow-none">
+        <div className="p-8 space-y-8">
+          {/* Header */}
+          <div className="text-center space-y-2">
+            <p className="font-text-large-text-regular text-black-color">
+              Hey there,
             </p>
+            <h1 className="font-title-h4-bold text-black-color text-2xl">
+              {isSignUp ? "Create Account" : "Welcome Back"}
+            </h1>
           </div>
 
-          <div className="space-y-4">
+          {/* Form */}
+          <form onSubmit={handleAuth} className="space-y-4">
+            <div className="relative">
+              <MailCheckIcon className="absolute left-3.5 top-3.5 h-[18px] w-[18px] text-gray-2" />
+              <Input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={isLoading}
+                className="pl-12 h-12 bg-border-color border-[#f7f8f8] rounded-[14px]"
+              />
+            </div>
+
+            <div className="relative">
+              <LockIcon className="absolute left-3.5 top-3.5 h-[18px] w-[18px] text-gray-2" />
+              <Input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={isLoading}
+                minLength={8}
+                className="pl-12 pr-12 h-12 bg-border-color border-[#f7f8f8] rounded-[14px]"
+              />
+              <EyeIcon className="absolute right-3.5 top-3.5 h-[18px] w-[18px] text-gray-2 cursor-pointer" />
+            </div>
+
+            {!isSignUp && (
+              <button type="button" className="text-gray-2 text-center w-full underline font-link-medium text-xs">
+                Forgot your password?
+              </button>
+            )}
+
+            {/* Login/Signup Button */}
             <Button
               type="submit"
-              className="w-full bg-gradient-to-b from-[#92A3FD] to-[#9DCEFF] hover:opacity-90 text-white"
+              className="w-full h-[60px] rounded-[99px] bg-gradient-to-b from-[#9293FD] to-[#9DCEFF] shadow-blue-shadow"
               disabled={isLoading}
             >
               {isLoading ? (
-                <>
-                  <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                  Loading...
-                </>
-              ) : isSignUp ? (
-                "Create Account"
+                <Loader2Icon className="mr-2 h-6 w-6 animate-spin" />
               ) : (
-                "Sign In"
+                <MailCheckIcon className="mr-2 h-6 w-6" />
               )}
+              <span className="font-bold">{isLoading ? "Loading..." : (isSignUp ? "Sign Up" : "Login")}</span>
             </Button>
+          </form>
 
-            <Button
+          {/* Divider */}
+          <div className="flex items-center gap-2">
+            <Separator className="flex-1" />
+            <span className="text-xs text-black-color font-normal">Or</span>
+            <Separator className="flex-1" />
+          </div>
+
+          {/* Social Login */}
+          <div className="flex justify-center gap-5">
+            {socialButtons.map((button, index) => (
+              <Button
+                key={index}
+                variant="outline"
+                className="w-[50px] h-[50px] rounded-[14px] border-gray-3 border-[0.8px] p-0"
+              >
+                <img
+                  src={button.icon}
+                  alt={button.alt}
+                  className="w-5 h-5 object-contain"
+                />
+              </Button>
+            ))}
+          </div>
+
+          {/* Register/Login Link */}
+          <div className="text-center">
+            <span className="text-black-color">
+              {isSignUp ? "Already have an account? " : "Don't have an account yet? "}
+            </span>
+            <button
               type="button"
-              variant="ghost"
-              className="w-full"
               onClick={() => !isLoading && setIsSignUp(!isSignUp)}
+              className="text-black-color underline font-medium"
               disabled={isLoading}
             >
-              {isSignUp
-                ? "Already have an account? Sign In"
-                : "Don't have an account? Sign Up"}
-            </Button>
+              {isSignUp ? "Login" : "Register"}
+            </button>
           </div>
-        </form>
+        </div>
       </Card>
     </motion.div>
   );

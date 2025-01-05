@@ -1,10 +1,7 @@
-import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Home } from "./HomeScreen";
 import { ActivityScreen } from "./pages/ActivityScreen";
-import { CameraScreen } from "./pages/CameraScreen";
 import { SearchScreen } from "./pages/SearchScreen";
-import { ProfileScreen } from "./pages/ProfileScreen";
 import { LoginScreen } from "./pages/LoginScreen";
 import { NotificationScreen } from "./HomeScreen";
 import { BottomNavigation } from "./components/BottomNavigation";
@@ -27,6 +24,11 @@ import PrivateRoute from "./components/PrivateRoute";
 import { WaterIntake } from "./pages/WaterIntake";
 import { PeriodTracker } from "./pages/PeriodTracker";
 import { AdminPage } from "./pages/Admin/AdminPage";
+import { Intro } from "./pages/PeriodCycle/LoadingScreen";
+import { Settings } from "./pages/PeriodCycle/Settings";
+import { Tracker } from "./pages/PeriodCycle/Calendar";
+import { HomeCycle } from "./pages/PeriodCycle/StartScreen";
+import WorkoutPlayer from "./pages/WorkoutPlayer";
 
 function App() {
   return (
@@ -58,7 +60,11 @@ function App() {
           <Route path="/workout-details/:workoutId" element={<PrivateRoute component={WorkoutDetails} />} />
           <Route path="/language-settings" element={<PrivateRoute component={LanguageSettings} />} />
           <Route path="/apple-watch-overview" element={<PrivateRoute component={AppleWatchOverview} />} />
-
+          <Route path="/period-cycle" element={<PrivateRoute component={Intro} />} />
+          <Route path="/period-cycle/settings" element={<PrivateRoute component={Settings} />} />
+          <Route path="/period-cycle/start" element={<PrivateRoute component={HomeCycle} />} />
+          <Route path="/period-cycle/calendar" element={<PrivateRoute component={Tracker} />} />
+          <Route path="/workout-player/:workoutId" element={<WorkoutPlayer />} />
           {/* Admin */}
           <Route path="/adminPage" element={<PrivateRoute component={AdminPage} />} />
         </Routes>

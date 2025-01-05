@@ -36,13 +36,34 @@ interface AdminUser {
     // Hier kannst du weitere Felder ergänzen, z. B. subscription_status, is_active, usw.
 }
 
+interface Exercise {
+    id: number;
+    name: string;
+    duration?: string;
+    reps?: string;
+    image_url?: string;
+    video_url?: string;
+    set_number: number;
+}
+
+interface Workout {
+    id: number;
+    name: string;
+    description: string;
+    duration: number;
+    difficulty: string;
+    calories_burn: number;
+    exercises: Exercise[];
+}
+
 export const AdminPage = () => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(true);
     const [users, setUsers] = useState<AdminUser[]>([]);
-    const [workouts, setWorkouts] = useState<AdminWorkout[]>([]);
+    const [workouts, setWorkouts] = useState<Workout[]>([]);
     const [openWorkoutDialog, setOpenWorkoutDialog] = useState(false);
-
+    const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
+    const [isAddingExercise, setIsAddingExercise] = useState(false);
     const [newWorkout, setNewWorkout] = useState({
         name: "",
         type: "",
@@ -52,6 +73,15 @@ export const AdminPage = () => {
         exercises_count: 0,
         calories_burned: 0,
         schedule_time: "",
+    });
+
+    const [newExercise, setNewExercise] = useState<Partial<Exercise>>({
+        name: "",
+        duration: "",
+        reps: "",
+        image_url: "",
+        video_url: "",
+        set_number: 1,
     });
 
     useEffect(() => {
@@ -118,14 +148,19 @@ export const AdminPage = () => {
 
     const fetchWorkouts = async () => {
         try {
-            const { data, error } = await supabaseAdmin.from("workouts").select("*");
+            const { data, error } = await supabaseAdmin
+                .from("workouts")
+                .select(`
+                    *,
+                    exercises (*)
+                `);
+
             if (error) {
                 console.error("Error fetching workouts:", error);
                 return;
             }
-            if (data) {
-                setWorkouts(data as AdminWorkout[]);
-            }
+
+            setWorkouts(data || []);
         } catch (err) {
             console.error("Unknown error fetching workouts:", err);
         }
@@ -164,6 +199,108 @@ export const AdminPage = () => {
             });
         } catch (err) {
             console.error("Unknown error inserting workout:", err);
+        }
+    };
+
+    const handleAddExercise = async () => {
+        if (!selectedWorkout) return;
+
+        try {
+            const { data, error } = await supabaseAdmin
+                .from("exercises")
+                .insert([
+                    {
+                        ...newExercise,
+                        workout_id: selectedWorkout.id,
+                    },
+                ])
+                .select();
+
+            if (error) throw error;
+
+            // Exercise erfolgreich angelegt -> Liste neu laden und Dialog schließen
+            await fetchWorkouts();
+            setIsAddingExercise(false);
+            setNewExercise({
+                name: "",
+                duration: "",
+                reps: "",
+                image_url: "",
+                video_url: "",
+                set_number: 1,
+            });
+        } catch (error) {
+            console.error("Error adding exercise:", error);
+        }
+    };
+
+    const handleUpdateExercise = async (exercise: Exercise) => {
+        try {
+            const { error } = await supabaseAdmin
+                .from("exercises")
+                .update({
+                    name: exercise.name,
+                    duration: exercise.duration,
+                    reps: exercise.reps,
+                    image_url: exercise.image_url,
+                    video_url: exercise.video_url,
+                    set_number: exercise.set_number,
+                })
+                .eq("id", exercise.id);
+
+            if (error) throw error;
+
+            // Exercise erfolgreich aktualisiert -> Liste neu laden
+            await fetchWorkouts();
+        } catch (error) {
+            console.error("Error updating exercise:", error);
+        }
+    };
+
+    const handleDeleteExercise = async (exerciseId: number) => {
+        try {
+            const { error } = await supabaseAdmin
+                .from("exercises")
+                .delete()
+                .eq("id", exerciseId);
+
+            if (error) throw error;
+
+            // Exercise erfolgreich gelöscht -> Liste neu laden
+            await fetchWorkouts();
+        } catch (error) {
+            console.error("Error deleting exercise:", error);
+        }
+    };
+
+    const handleFileUpload = async (file: File, exerciseId: number, type: 'video' | 'image') => {
+        try {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${type}-${exerciseId}.${fileExt}`;
+            const filePath = `exercises/${type}s/${fileName}`;
+
+            const { error: uploadError } = await supabaseAdmin.storage
+                .from('workout-media')
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabaseAdmin.storage
+                .from('workout-media')
+                .getPublicUrl(filePath);
+
+            const updateField = type === 'video' ? 'video_url' : 'image_url';
+            const { error: updateError } = await supabaseAdmin
+                .from('exercises')
+                .update({ [updateField]: publicUrl })
+                .eq('id', exerciseId);
+
+            if (updateError) throw updateError;
+
+            // Exercise erfolgreich aktualisiert -> Liste neu laden
+            await fetchWorkouts();
+        } catch (error) {
+            console.error(`Error uploading ${type}:`, error);
         }
     };
 
@@ -320,6 +457,233 @@ export const AdminPage = () => {
                     ))}
                 </CardContent>
             </Card>
+
+            {/* Exercises Section */}
+            <Card className="mb-8">
+                <CardHeader className="p-4">
+                    <h2 className="text-base font-semibold">Exercises</h2>
+                </CardHeader>
+                <CardContent className="p-4 space-y-2">
+                    {workouts.length === 0 && (
+                        <p className="text-sm text-gray-500">No exercises found.</p>
+                    )}
+                    {workouts.map((workout) => (
+                        <div key={workout.id} className="mb-8">
+                            <h3 className="text-lg font-bold mb-4">{workout.name}</h3>
+                            {workout.exercises?.map((exercise) => (
+                                <Card key={exercise.id} className="mb-4">
+                                    <CardContent className="pt-6">
+                                        <div className="grid gap-4">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label
+                                                        className="text-sm font-medium text-gray-700"
+                                                        htmlFor={`name-${exercise.id}`}
+                                                    >
+                                                        Name
+                                                    </label>
+                                                    <Input
+                                                        id={`name-${exercise.id}`}
+                                                        value={exercise.name}
+                                                        onChange={(e) =>
+                                                            handleUpdateExercise({
+                                                                ...exercise,
+                                                                name: e.target.value,
+                                                            })
+                                                        }
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label
+                                                        className="text-sm font-medium text-gray-700"
+                                                        htmlFor={`duration-${exercise.id}`}
+                                                    >
+                                                        Duration (seconds)
+                                                    </label>
+                                                    <Input
+                                                        id={`duration-${exercise.id}`}
+                                                        value={exercise.duration}
+                                                        onChange={(e) =>
+                                                            handleUpdateExercise({
+                                                                ...exercise,
+                                                                duration: e.target.value,
+                                                            })
+                                                        }
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label
+                                                        className="text-sm font-medium text-gray-700"
+                                                        htmlFor={`video-${exercise.id}`}
+                                                    >
+                                                        Upload Video
+                                                    </label>
+                                                    <Input
+                                                        id={`video-${exercise.id}`}
+                                                        type="file"
+                                                        accept="video/*"
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) {
+                                                                handleFileUpload(file, exercise.id, 'video');
+                                                            }
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label
+                                                        className="text-sm font-medium text-gray-700"
+                                                        htmlFor={`image-${exercise.id}`}
+                                                    >
+                                                        Upload Image
+                                                    </label>
+                                                    <Input
+                                                        id={`image-${exercise.id}`}
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) {
+                                                                handleFileUpload(file, exercise.id, 'image');
+                                                            }
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {exercise.video_url && (
+                                                <div>
+                                                    <label>Current Video</label>
+                                                    <video
+                                                        src={exercise.video_url}
+                                                        controls
+                                                        className="w-full max-h-48 object-cover rounded-lg"
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {exercise.image_url && (
+                                                <div>
+                                                    <label>Current Image</label>
+                                                    <img
+                                                        src={exercise.image_url}
+                                                        alt={exercise.name}
+                                                        className="w-full max-h-48 object-cover rounded-lg"
+                                                    />
+                                                </div>
+                                            )}
+
+                                            <Button
+                                                variant="destructive"
+                                                onClick={() => handleDeleteExercise(exercise.id)}
+                                            >
+                                                Delete Exercise
+                                            </Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    ))}
+                </CardContent>
+            </Card>
+
+            {/* Add Exercise Dialog */}
+            <Dialog open={isAddingExercise} onOpenChange={setIsAddingExercise}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Add Exercise</DialogTitle>
+                        <DialogDescription>
+                            Add a new exercise to {selectedWorkout?.name}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="grid gap-4 py-4">
+                        <div>
+                            <label className="text-sm font-medium text-gray-700" htmlFor="name">
+                                Name
+                            </label>
+                            <Input
+                                id="name"
+                                value={newExercise.name}
+                                onChange={(e) =>
+                                    setNewExercise({ ...newExercise, name: e.target.value })
+                                }
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label
+                                    className="text-sm font-medium text-gray-700"
+                                    htmlFor="duration"
+                                >
+                                    Duration (seconds)
+                                </label>
+                                <Input
+                                    id="duration"
+                                    value={newExercise.duration}
+                                    onChange={(e) =>
+                                        setNewExercise({ ...newExercise, duration: e.target.value })
+                                    }
+                                />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-gray-700" htmlFor="reps">
+                                    Reps
+                                </label>
+                                <Input
+                                    id="reps"
+                                    value={newExercise.reps}
+                                    onChange={(e) =>
+                                        setNewExercise({ ...newExercise, reps: e.target.value })
+                                    }
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="text-sm font-medium text-gray-700" htmlFor="set">
+                                Set Number
+                            </label>
+                            <Input
+                                id="set"
+                                type="number"
+                                value={newExercise.set_number}
+                                onChange={(e) =>
+                                    setNewExercise({
+                                        ...newExercise,
+                                        set_number: parseInt(e.target.value),
+                                    })
+                                }
+                            />
+                        </div>
+                        <div>
+                            <label className="text-sm font-medium text-gray-700" htmlFor="video">
+                                Video URL
+                            </label>
+                            <Input
+                                id="video"
+                                value={newExercise.video_url}
+                                onChange={(e) =>
+                                    setNewExercise({ ...newExercise, video_url: e.target.value })
+                                }
+                            />
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsAddingExercise(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button onClick={handleAddExercise}>Add Exercise</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

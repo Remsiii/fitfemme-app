@@ -24,34 +24,21 @@ import { WaterIntakeManager } from './components/WaterIntakeManager';
 import { BMIManager } from './components/BMIManager';
 import { useTranslation } from 'react-i18next';
 
-const workoutData = [
-  {
-    title: "Fullbody Workout",
-    duration: "20minutes",
-    calories: "180 Calories Burn",
-    progress: 30,
-    icon: "vector.png",
-  },
-  {
-    title: "Lowerbody Workout",
-    duration: "30minutes",
-    calories: "200 Calories Burn",
-    progress: 55,
-    icon: "vector-2.png",
-  },
-  {
-    title: "Ab Workout",
-    duration: "20minutes",
-    calories: "180 Calories Burn",
-    progress: 30,
-    icon: "vector-1.png",
-  },
-];
+interface WorkoutData {
+  id: number;
+  name: string;
+  description: string;
+  duration?: number;
+  calories_burn?: number;
+  progress?: number;
+  icon?: string;
+  difficulty?: string;
+  category?: string;
+}
 
 interface UserProfile {
   name: string;
 }
-
 
 export const Home = (): JSX.Element => {
   const { t } = useTranslation();
@@ -60,7 +47,10 @@ export const Home = (): JSX.Element => {
   const [profile, setProfile] = useState<UserProfile>({
     name: "",
   });
+  const [workouts, setWorkouts] = useState<WorkoutData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Fetch user profile
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
@@ -85,19 +75,43 @@ export const Home = (): JSX.Element => {
           name: profileData.full_name || "New User",
         });
 
-        // Hier speicherst du den Namen im Supabase-User-Metadata
         await supabase.auth.updateUser({
           data: { metadata_name: profileData.full_name },
         });
       } catch (error) {
         console.error("Error fetching profile:", error);
-      } finally {
       }
     };
 
     fetchUserProfile();
   }, []);
 
+  // Fetch workouts
+  useEffect(() => {
+    const fetchWorkouts = async () => {
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('workouts')
+          .select('*')
+          .limit(5);
+
+        if (error) {
+          throw error;
+        }
+
+        if (data) {
+          setWorkouts(data);
+        }
+      } catch (error) {
+        console.error("Error fetching workouts:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchWorkouts();
+  }, []);
 
   const navigateToAppleWatchOverview = () => {
     navigate('/apple-watch-overview');
@@ -114,6 +128,18 @@ export const Home = (): JSX.Element => {
   return (
     <div className="bg-white flex flex-row justify-center w-full">
       <div className="bg-white w-[375px] h-[1527px] relative">
+        <div className="absolute top-24 right-7">
+          <Button
+            onClick={() => navigate("/apple-watch-overview")}
+            className="bg-gradient-to-r from-gray-800 to-gray-900 hover:from-gray-900 hover:to-black text-white rounded-full p-3 shadow-lg transition-all duration-300 hover:scale-105"
+          >
+            <img
+              src="/icons/apple_watch.png"
+              alt="Apple Watch Icon"
+              className="w-6 h-6"
+            />
+          </Button>
+        </div>
         <header className="flex justify-between items-center px-8 pt-10">
           <div className="flex flex-col">
             <span className="text-gray-2 text-sm">{t('Welcome Back')}</span>
@@ -344,61 +370,80 @@ export const Home = (): JSX.Element => {
 
         <div className="px-8 mt-8">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-black-color font-semibold">Latest Workout</h2>
-            <Button variant="link" className="text-gray-2">
-              See more
+            <h2 className="text-black-color font-semibold">{t('Latest Workout')}</h2>
+            <Button
+              variant="ghost"
+              className="text-[#92A3FD] hover:text-[#7B93FF] p-0"
+              onClick={() => navigate('/search')}
+            >
+              {t('See More')}
             </Button>
           </div>
 
-          <div className="space-y-4">
-            {workoutData.map((workout, index) => (
-              <Card key={index} className="shadow-card-shadow">
-                <CardContent className="p-4 flex items-center">
-                  <div className="w-[50px] h-[50px] rounded-[25px] bg-gradient-to-b from-[#92A3FD] to-[#9DCEFF] mr-4" />
-                  <div className="flex-1">
-                    <h4 className="font-medium text-black-color">
-                      {workout.title}
-                    </h4>
-                    <p className="text-xs text-gray-2">
-                      {workout.calories} | {workout.duration}
-                    </p>
-                    <Progress
-                      value={workout.progress}
-                      className="h-2.5 mt-2 bg-[#F7F8F8]"
-                    />
-                  </div>
-                  <Button variant="ghost" size="icon" className="ml-4">
-                    <ChevronRightCircleIcon className="h-4 w-4" />
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-
-        <div className="px-8 mt-8">
-          <div className="flex flex-col items-center">
-            <div
-              className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 focus:ring focus:ring-gray-300 transition duration-200"
-              onClick={navigateToAppleWatchOverview}
-              role="button"
-              tabIndex={0} // Ermöglicht Tastatur-Navigation
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") navigateToAppleWatchOverview();
-              }}
-            >
-              <img
-                src="icons/apple_watch.png"
-                alt="Apple Watch Icon"
-                className="w-8 h-8"
-              />
+          {isLoading ? (
+            <div className="flex justify-center items-center h-32">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#92A3FD]"></div>
             </div>
-          </div>
-          <WaterIntakeManager />
-          <BMIManager />
+          ) : workouts.length > 0 ? (
+            <div className="space-y-4">
+              {workouts.map((workout) => (
+                <Card
+                  key={workout.id}
+                  className="bg-white border border-[#F7F8F8] hover:border-[#92A3FD] transition-colors cursor-pointer"
+                  onClick={() => navigate(`/workout-details/${workout.id}`)}
+                >
+                  <CardContent className="flex items-center p-4">
+                    <div className="w-[50px] h-[50px] rounded-[12px] bg-[#F7F8F8] flex items-center justify-center mr-4">
+                      <img
+                        src={workout.icon ? `/workout-icons/${workout.icon}` : "/workout-icons/vector.png"}
+                        alt={workout.name}
+                        className="w-6 h-6"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-black-color font-medium mb-1">
+                        {workout.name}
+                      </h3>
+                      <div className="flex items-center text-xs text-gray-2 space-x-2">
+                        {workout.duration && <span>{workout.duration} minutes</span>}
+                        {workout.duration && workout.calories_burn && <span>•</span>}
+                        {workout.calories_burn && <span>{workout.calories_burn} Calories Burn</span>}
+                      </div>
+                      {workout.progress !== undefined && (
+                        <Progress value={workout.progress} className="h-1 mt-2" />
+                      )}
+                      <p className="text-sm text-gray-500 mt-1 line-clamp-1">{workout.description}</p>
+                    </div>
+                    <ChevronRightCircleIcon className="w-6 h-6 text-[#92A3FD] ml-4" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card className="bg-white border border-[#F7F8F8]">
+              <CardContent className="flex flex-col items-center justify-center p-8 text-center">
+                <div className="w-16 h-16 bg-[#F7F8F8] rounded-full flex items-center justify-center mb-4">
+                  <ArrowUp01Icon className="w-8 h-8 text-[#92A3FD]" />
+                </div>
+                <h3 className="text-black-color font-medium mb-2">
+                  {t('No Workouts Yet')}
+                </h3>
+                <p className="text-gray-2 text-sm mb-4">
+                  {t('Start your fitness journey by adding your first workout')}
+                </p>
+                <Button
+                  onClick={() => navigate('/search')}
+                  className="bg-gradient-to-r from-[#92A3FD] to-[#9DCEFF] text-white"
+                >
+                  {t('Browse Workouts')}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
-
+        <WaterIntakeManager />
+        <BMIManager />
       </div>
     </div >
   );

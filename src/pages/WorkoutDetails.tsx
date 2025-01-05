@@ -21,7 +21,11 @@ export const WorkoutDetails = (): JSX.Element => {
   const [workoutDetails, setWorkoutDetails] = useState<Workout | null>(null);
   const [equipmentData, setEquipmentData] = useState<Equipment[]>([]);
   const [exercisesData, setExercisesData] = useState<Exercise[]>([]);
-
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [currentExerciseIndex, setCurrentExerciseIndex] = useState<number>(0);
+  const [timeLeft, setTimeLeft] = useState<number>(60);
+  const [isWorkoutStarted, setIsWorkoutStarted] = useState<boolean>(false);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
 
   type Equipment = {
     name: string;
@@ -49,7 +53,6 @@ export const WorkoutDetails = (): JSX.Element => {
     workout_equipment: { equipment: Equipment }[];
     exercises: Exercise[];
   };
-
 
   useEffect(() => {
     const fetchWorkoutDetails = async () => {
@@ -84,6 +87,57 @@ export const WorkoutDetails = (): JSX.Element => {
 
     fetchWorkoutDetails();
   }, [workoutId]);
+
+  const startWorkout = async () => {
+    console.log('Start Workout button clicked');
+    if (exercisesData.length === 0) {
+      console.warn('No exercises available to start');
+      return;
+    }
+    
+    try {
+      console.log('Inserting workout start record into database');
+      // Get current user ID
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('User not authenticated');
+        return;
+      }
+      // Record workout start in database
+      const { error } = await supabase
+        .from('workout_history')
+        .insert([
+          {
+            user_id: user.id,  // Include user_id for RLS
+            workout_id: workoutId,
+            start_time: new Date().toISOString(),
+            status: 'in_progress'
+          }
+        ]);
+
+      if (error) {
+        console.error('Error inserting workout start record:', error);
+        throw error;
+      }
+
+      console.log('Starting countdown');
+      // Start countdown
+      setCountdown(3);
+      const countdownInterval = setInterval(() => {
+        setCountdown((prevCountdown) => {
+          if (prevCountdown === 1) {
+            clearInterval(countdownInterval);
+            console.log('Countdown complete, navigating to WorkoutPlayer');
+            navigate(`/workout-player/${workoutId}`);
+            return null;
+          }
+          return prevCountdown! - 1;
+        });
+      }, 1000);
+    } catch (error) {
+      console.error('Error starting workout:', error);
+    }
+  };
 
   if (!workoutDetails) return <div>Loading...</div>;
 
@@ -234,12 +288,22 @@ export const WorkoutDetails = (): JSX.Element => {
             </div>
 
             {/* Start Workout Button */}
-            <Button className="w-full mt-8 h-[50px] bg-gradient-to-b from-[#92A3FD] to-[#9DCEFF] rounded-full font-bold shadow-blue-shadow">
+            <Button
+              className="w-full mt-8 h-[50px] bg-gradient-to-b from-[#92A3FD] to-[#9DCEFF] rounded-full font-bold shadow-blue-shadow"
+              onClick={startWorkout}
+            >
               Start Workout
             </Button>
           </CardContent>
         </Card>
       </div>
+
+      {/* Countdown Display */}
+      {countdown !== null && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 z-50">
+          <h1 className="text-white text-6xl font-bold">{countdown}</h1>
+        </div>
+      )}
     </div>
   );
 };
