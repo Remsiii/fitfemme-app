@@ -29,6 +29,7 @@ import { Settings } from "./pages/PeriodCycle/Settings";
 import { Tracker } from "./pages/PeriodCycle/Calendar";
 import { HomeCycle } from "./pages/PeriodCycle/StartScreen";
 import WorkoutPlayer from "./pages/WorkoutPlayer";
+import EditWorkout from "./pages/Admin/EditWorkout";
 
 function App() {
   return (
@@ -66,7 +67,9 @@ function App() {
           <Route path="/period-cycle/calendar" element={<PrivateRoute component={Tracker} />} />
           <Route path="/workout-player/:workoutId" element={<WorkoutPlayer />} />
           {/* Admin */}
-          <Route path="/adminPage" element={<PrivateRoute component={AdminPage} />} />
+          <Route path="/admin" element={<PrivateRoute component={AdminPage} />} />
+          <Route path="/admin/workout/:workoutId" element={<PrivateRoute component={EditWorkout} />} />
+          <Route path="/period-cycle" element={<PrivateRoute component={Intro} />} />
         </Routes>
       </main>
       <BottomNavigation />

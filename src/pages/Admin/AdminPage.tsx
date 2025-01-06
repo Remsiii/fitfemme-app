@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { Loader2Icon, PlusCircleIcon } from "lucide-react";
+import UserProgress from "./UserProgress";
 
 interface AdminWorkout {
     id: number;
@@ -83,6 +84,8 @@ export const AdminPage = () => {
         video_url: "",
         set_number: 1,
     });
+
+    const [activeTab, setActiveTab] = useState<'workouts' | 'users' | 'progress'>('workouts');
 
     useEffect(() => {
         const checkAdmin = async () => {
@@ -304,386 +307,197 @@ export const AdminPage = () => {
         }
     };
 
-    if (isLoading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <Loader2Icon className="w-6 h-6 animate-spin" />
-            </div>
-        );
-    }
-
     return (
-        <div className="bg-white min-h-screen p-6 pb-32">
+        <div className="bg-white min-h-screen p-6">
             <h1 className="text-xl font-semibold mb-4">Admin Dashboard</h1>
 
-            {/* Users Section */}
-            <Card className="mb-8">
-                <CardHeader className="p-4">
-                    <h2 className="text-base font-semibold">Users</h2>
-                </CardHeader>
-                <CardContent className="p-4 space-y-2">
-                    {users.length === 0 && <p className="text-sm text-gray-500">No users found.</p>}
-                    {users.map((user) => (
-                        <div key={user.id} className="flex justify-between items-center text-sm">
-                            <span>{user.email}</span>
-                            <span className="text-xs text-gray-400">{user.id}</span>
-                        </div>
-                    ))}
-                </CardContent>
-            </Card>
+            <div className="flex gap-4 mb-6">
+                <Button
+                    variant={activeTab === 'workouts' ? 'default' : 'outline'}
+                    onClick={() => setActiveTab('workouts')}
+                    className={activeTab === 'workouts' ? 'bg-[#92A3FD] text-white' : ''}
+                >
+                    Workouts
+                </Button>
+                <Button
+                    variant={activeTab === 'users' ? 'default' : 'outline'}
+                    onClick={() => setActiveTab('users')}
+                    className={activeTab === 'users' ? 'bg-[#92A3FD] text-white' : ''}
+                >
+                    Users
+                </Button>
+                <Button
+                    variant={activeTab === 'progress' ? 'default' : 'outline'}
+                    onClick={() => setActiveTab('progress')}
+                    className={activeTab === 'progress' ? 'bg-[#92A3FD] text-white' : ''}
+                >
+                    Progress
+                </Button>
+            </div>
 
-            {/* Workouts Section */}
-            <Card className="mb-8">
-                <CardHeader className="p-4 flex items-center justify-between">
-                    <h2 className="text-base font-semibold">Workouts</h2>
-                    <Dialog open={openWorkoutDialog} onOpenChange={setOpenWorkoutDialog}>
-                        <DialogTrigger asChild>
-                            <Button size="sm" className="flex items-center gap-2 bg-gradient-to-b from-[#92A3FD] to-[#9DCEFF] text-white">
-                                <PlusCircleIcon className="w-4 h-4" />
-                                <span>Add Workout</span>
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="p-6 rounded-lg bg-white w-[350px]">
-                            <DialogHeader>
-                                <DialogTitle>Neues Workout anlegen</DialogTitle>
-                                <DialogDescription>
-                                    Fülle die folgenden Felder aus:
-                                </DialogDescription>
-                            </DialogHeader>
-
-                            <div className="flex flex-col gap-2 mt-4">
-                                <label className="text-sm font-medium text-gray-700">Name</label>
-                                <Input
-                                    type="text"
-                                    value={newWorkout.name}
-                                    onChange={(e) => setNewWorkout({ ...newWorkout, name: e.target.value })}
-                                />
-
-                                <label className="text-sm font-medium text-gray-700">Type</label>
-                                <Input
-                                    type="text"
-                                    value={newWorkout.type}
-                                    onChange={(e) => setNewWorkout({ ...newWorkout, type: e.target.value })}
-                                />
-
-                                <label className="text-sm font-medium text-gray-700">Difficulty</label>
-                                <Input
-                                    type="text"
-                                    value={newWorkout.difficulty}
-                                    onChange={(e) =>
-                                        setNewWorkout({ ...newWorkout, difficulty: e.target.value })
-                                    }
-                                />
-
-                                <label className="text-sm font-medium text-gray-700">Duration (min)</label>
-                                <Input
-                                    type="number"
-                                    value={newWorkout.duration}
-                                    onChange={(e) =>
-                                        setNewWorkout({ ...newWorkout, duration: parseInt(e.target.value) })
-                                    }
-                                />
-
-                                <label className="text-sm font-medium text-gray-700">Description</label>
-                                <Input
-                                    type="text"
-                                    value={newWorkout.description}
-                                    onChange={(e) =>
-                                        setNewWorkout({ ...newWorkout, description: e.target.value })
-                                    }
-                                />
-
-                                <label className="text-sm font-medium text-gray-700">Exercises Count</label>
-                                <Input
-                                    type="number"
-                                    value={newWorkout.exercises_count}
-                                    onChange={(e) =>
-                                        setNewWorkout({
-                                            ...newWorkout,
-                                            exercises_count: parseInt(e.target.value),
-                                        })
-                                    }
-                                />
-
-                                <label className="text-sm font-medium text-gray-700">Calories Burned</label>
-                                <Input
-                                    type="number"
-                                    value={newWorkout.calories_burned}
-                                    onChange={(e) =>
-                                        setNewWorkout({
-                                            ...newWorkout,
-                                            calories_burned: parseInt(e.target.value),
-                                        })
-                                    }
-                                />
-
-                                <label className="text-sm font-medium text-gray-700">Schedule Time</label>
-                                <Input
-                                    type="datetime-local"
-                                    value={newWorkout.schedule_time}
-                                    onChange={(e) =>
-                                        setNewWorkout({ ...newWorkout, schedule_time: e.target.value })
-                                    }
-                                />
-                            </div>
-
-                            <DialogFooter className="mt-6">
-                                <Button
-                                    variant="default"
-                                    onClick={handleAddWorkout}
-                                    className="bg-[#92A3FD] hover:bg-[#9DCEFF] text-white w-full"
-                                >
-                                    Speichern
-                                </Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
-                </CardHeader>
-
-                <CardContent className="p-4 space-y-2">
-                    {workouts.length === 0 && (
-                        <p className="text-sm text-gray-500">No workouts found.</p>
+            {isLoading ? (
+                <div className="flex items-center justify-center min-h-screen">
+                    <Loader2Icon className="w-6 h-6 animate-spin" />
+                </div>
+            ) : (
+                <>
+                    {activeTab === 'users' && (
+                        <Card className="mb-8">
+                            <CardHeader className="p-4">
+                                <h2 className="text-base font-semibold">Users</h2>
+                            </CardHeader>
+                            <CardContent className="p-4 space-y-2">
+                                {users.length === 0 && <p className="text-sm text-gray-500">No users found.</p>}
+                                {users.map((user) => (
+                                    <div key={user.id} className="flex justify-between items-center text-sm p-2 hover:bg-gray-50 rounded">
+                                        <span>{user.email}</span>
+                                        <span className="text-xs text-gray-400">{user.id}</span>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
                     )}
-                    {workouts.map((workout) => (
-                        <div key={workout.id} className="flex items-center justify-between text-sm">
-                            <div>
-                                <p className="font-medium">{workout.name}</p>
-                                <p className="text-xs text-gray-400">
-                                    {workout.type} | {workout.difficulty} | {workout.duration} min
-                                </p>
-                            </div>
-                            <span className="text-xs text-gray-400">ID: {workout.id}</span>
-                        </div>
-                    ))}
-                </CardContent>
-            </Card>
 
-            {/* Exercises Section */}
-            <Card className="mb-8">
-                <CardHeader className="p-4">
-                    <h2 className="text-base font-semibold">Exercises</h2>
-                </CardHeader>
-                <CardContent className="p-4 space-y-2">
-                    {workouts.length === 0 && (
-                        <p className="text-sm text-gray-500">No exercises found.</p>
+                    {activeTab === 'progress' && (
+                        <UserProgress />
                     )}
-                    {workouts.map((workout) => (
-                        <div key={workout.id} className="mb-8">
-                            <h3 className="text-lg font-bold mb-4">{workout.name}</h3>
-                            {workout.exercises?.map((exercise) => (
-                                <Card key={exercise.id} className="mb-4">
-                                    <CardContent className="pt-6">
-                                        <div className="grid gap-4">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <label
-                                                        className="text-sm font-medium text-gray-700"
-                                                        htmlFor={`name-${exercise.id}`}
-                                                    >
-                                                        Name
-                                                    </label>
-                                                    <Input
-                                                        id={`name-${exercise.id}`}
-                                                        value={exercise.name}
-                                                        onChange={(e) =>
-                                                            handleUpdateExercise({
-                                                                ...exercise,
-                                                                name: e.target.value,
-                                                            })
-                                                        }
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label
-                                                        className="text-sm font-medium text-gray-700"
-                                                        htmlFor={`duration-${exercise.id}`}
-                                                    >
-                                                        Duration (seconds)
-                                                    </label>
-                                                    <Input
-                                                        id={`duration-${exercise.id}`}
-                                                        value={exercise.duration}
-                                                        onChange={(e) =>
-                                                            handleUpdateExercise({
-                                                                ...exercise,
-                                                                duration: e.target.value,
-                                                            })
-                                                        }
-                                                    />
-                                                </div>
-                                            </div>
 
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <label
-                                                        className="text-sm font-medium text-gray-700"
-                                                        htmlFor={`video-${exercise.id}`}
-                                                    >
-                                                        Upload Video
-                                                    </label>
-                                                    <Input
-                                                        id={`video-${exercise.id}`}
-                                                        type="file"
-                                                        accept="video/*"
-                                                        onChange={(e) => {
-                                                            const file = e.target.files?.[0];
-                                                            if (file) {
-                                                                handleFileUpload(file, exercise.id, 'video');
-                                                            }
-                                                        }}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label
-                                                        className="text-sm font-medium text-gray-700"
-                                                        htmlFor={`image-${exercise.id}`}
-                                                    >
-                                                        Upload Image
-                                                    </label>
-                                                    <Input
-                                                        id={`image-${exercise.id}`}
-                                                        type="file"
-                                                        accept="image/*"
-                                                        onChange={(e) => {
-                                                            const file = e.target.files?.[0];
-                                                            if (file) {
-                                                                handleFileUpload(file, exercise.id, 'image');
-                                                            }
-                                                        }}
-                                                    />
-                                                </div>
-                                            </div>
+                    {activeTab === 'workouts' && (
+                        <Card className="mb-8">
+                            <CardHeader className="p-4 flex items-center justify-between">
+                                <h2 className="text-base font-semibold">Workouts</h2>
+                                <Dialog open={openWorkoutDialog} onOpenChange={setOpenWorkoutDialog}>
+                                    <DialogTrigger asChild>
+                                        <Button size="sm" className="flex items-center gap-2 bg-gradient-to-b from-[#92A3FD] to-[#9DCEFF] text-white">
+                                            <PlusCircleIcon className="w-4 h-4" />
+                                            <span>Add Workout</span>
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="p-6 rounded-lg bg-white w-[350px]">
+                                        <DialogHeader>
+                                            <DialogTitle>Neues Workout anlegen</DialogTitle>
+                                            <DialogDescription>
+                                                Fülle die folgenden Felder aus:
+                                            </DialogDescription>
+                                        </DialogHeader>
 
-                                            {exercise.video_url && (
-                                                <div>
-                                                    <label>Current Video</label>
-                                                    <video
-                                                        src={exercise.video_url}
-                                                        controls
-                                                        className="w-full max-h-48 object-cover rounded-lg"
-                                                    />
-                                                </div>
-                                            )}
+                                        <div className="flex flex-col gap-2 mt-4">
+                                            <label className="text-sm font-medium text-gray-700">Name</label>
+                                            <Input
+                                                type="text"
+                                                value={newWorkout.name}
+                                                onChange={(e) => setNewWorkout({ ...newWorkout, name: e.target.value })}
+                                            />
 
-                                            {exercise.image_url && (
-                                                <div>
-                                                    <label>Current Image</label>
-                                                    <img
-                                                        src={exercise.image_url}
-                                                        alt={exercise.name}
-                                                        className="w-full max-h-48 object-cover rounded-lg"
-                                                    />
-                                                </div>
-                                            )}
+                                            <label className="text-sm font-medium text-gray-700">Type</label>
+                                            <Input
+                                                type="text"
+                                                value={newWorkout.type}
+                                                onChange={(e) => setNewWorkout({ ...newWorkout, type: e.target.value })}
+                                            />
 
-                                            <Button
-                                                variant="destructive"
-                                                onClick={() => handleDeleteExercise(exercise.id)}
-                                            >
-                                                Delete Exercise
-                                            </Button>
+                                            <label className="text-sm font-medium text-gray-700">Difficulty</label>
+                                            <Input
+                                                type="text"
+                                                value={newWorkout.difficulty}
+                                                onChange={(e) =>
+                                                    setNewWorkout({ ...newWorkout, difficulty: e.target.value })
+                                                }
+                                            />
+
+                                            <label className="text-sm font-medium text-gray-700">Duration (min)</label>
+                                            <Input
+                                                type="number"
+                                                value={newWorkout.duration}
+                                                onChange={(e) =>
+                                                    setNewWorkout({ ...newWorkout, duration: parseInt(e.target.value) })
+                                                }
+                                            />
+
+                                            <label className="text-sm font-medium text-gray-700">Description</label>
+                                            <Input
+                                                type="text"
+                                                value={newWorkout.description}
+                                                onChange={(e) =>
+                                                    setNewWorkout({ ...newWorkout, description: e.target.value })
+                                                }
+                                            />
+
+                                            <label className="text-sm font-medium text-gray-700">Exercises Count</label>
+                                            <Input
+                                                type="number"
+                                                value={newWorkout.exercises_count}
+                                                onChange={(e) =>
+                                                    setNewWorkout({
+                                                        ...newWorkout,
+                                                        exercises_count: parseInt(e.target.value),
+                                                    })
+                                                }
+                                            />
+
+                                            <label className="text-sm font-medium text-gray-700">Calories Burned</label>
+                                            <Input
+                                                type="number"
+                                                value={newWorkout.calories_burned}
+                                                onChange={(e) =>
+                                                    setNewWorkout({
+                                                        ...newWorkout,
+                                                        calories_burned: parseInt(e.target.value),
+                                                    })
+                                                }
+                                            />
+
+                                            <label className="text-sm font-medium text-gray-700">Schedule Time</label>
+                                            <Input
+                                                type="datetime-local"
+                                                value={newWorkout.schedule_time}
+                                                onChange={(e) =>
+                                                    setNewWorkout({ ...newWorkout, schedule_time: e.target.value })
+                                                }
+                                            />
                                         </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
-                    ))}
-                </CardContent>
-            </Card>
 
-            {/* Add Exercise Dialog */}
-            <Dialog open={isAddingExercise} onOpenChange={setIsAddingExercise}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Add Exercise</DialogTitle>
-                        <DialogDescription>
-                            Add a new exercise to {selectedWorkout?.name}
-                        </DialogDescription>
-                    </DialogHeader>
+                                        <DialogFooter className="mt-6">
+                                            <Button
+                                                variant="default"
+                                                onClick={handleAddWorkout}
+                                                className="bg-[#92A3FD] hover:bg-[#9DCEFF] text-white w-full"
+                                            >
+                                                Speichern
+                                            </Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
+                            </CardHeader>
 
-                    <div className="grid gap-4 py-4">
-                        <div>
-                            <label className="text-sm font-medium text-gray-700" htmlFor="name">
-                                Name
-                            </label>
-                            <Input
-                                id="name"
-                                value={newExercise.name}
-                                onChange={(e) =>
-                                    setNewExercise({ ...newExercise, name: e.target.value })
-                                }
-                            />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label
-                                    className="text-sm font-medium text-gray-700"
-                                    htmlFor="duration"
-                                >
-                                    Duration (seconds)
-                                </label>
-                                <Input
-                                    id="duration"
-                                    value={newExercise.duration}
-                                    onChange={(e) =>
-                                        setNewExercise({ ...newExercise, duration: e.target.value })
-                                    }
-                                />
-                            </div>
-                            <div>
-                                <label className="text-sm font-medium text-gray-700" htmlFor="reps">
-                                    Reps
-                                </label>
-                                <Input
-                                    id="reps"
-                                    value={newExercise.reps}
-                                    onChange={(e) =>
-                                        setNewExercise({ ...newExercise, reps: e.target.value })
-                                    }
-                                />
-                            </div>
-                        </div>
-                        <div>
-                            <label className="text-sm font-medium text-gray-700" htmlFor="set">
-                                Set Number
-                            </label>
-                            <Input
-                                id="set"
-                                type="number"
-                                value={newExercise.set_number}
-                                onChange={(e) =>
-                                    setNewExercise({
-                                        ...newExercise,
-                                        set_number: parseInt(e.target.value),
-                                    })
-                                }
-                            />
-                        </div>
-                        <div>
-                            <label className="text-sm font-medium text-gray-700" htmlFor="video">
-                                Video URL
-                            </label>
-                            <Input
-                                id="video"
-                                value={newExercise.video_url}
-                                onChange={(e) =>
-                                    setNewExercise({ ...newExercise, video_url: e.target.value })
-                                }
-                            />
-                        </div>
-                    </div>
-
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => setIsAddingExercise(false)}
-                        >
-                            Cancel
-                        </Button>
-                        <Button onClick={handleAddExercise}>Add Exercise</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                            <CardContent className="p-4 space-y-2">
+                                {workouts.length === 0 && (
+                                    <p className="text-sm text-gray-500">No workouts found.</p>
+                                )}
+                                {workouts.map((workout) => (
+                                    <div key={workout.id} className="flex items-center justify-between text-sm p-2 hover:bg-gray-50 rounded">
+                                        <div>
+                                            <p className="font-medium">{workout.name}</p>
+                                            <p className="text-xs text-gray-400">
+                                                {workout.type} | {workout.difficulty} | {workout.duration} min
+                                            </p>
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => navigate(`/admin/workout/${workout.id}`)}
+                                        >
+                                            Edit
+                                        </Button>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
+                    )}
+                </>
+            )}
         </div>
     );
 };
+
+export default AdminPage;
