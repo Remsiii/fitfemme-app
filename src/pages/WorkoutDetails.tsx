@@ -56,32 +56,40 @@ export const WorkoutDetails = (): JSX.Element => {
 
   useEffect(() => {
     const fetchWorkoutDetails = async () => {
-      const { data: workout, error } = await supabase
-        .from("workouts")
-        .select(
-          `
-          *,
-          workout_equipment (
-            equipment (
-              name, image_url
+      try {
+        const { data: workout, error } = await supabase
+          .from("workouts")
+          .select(
+            `
+            *,
+            workout_equipment (
+              equipment (
+                name, image_url
+              )
+            ),
+            exercises (
+              set_number, name, duration, reps, image_url
             )
-          ),
-          exercises (
-            set_number, name, duration, reps, image_url
+          `
           )
-        `
-        )
-        .eq("id", workoutId)
-        .single();
+          .eq("id", workoutId)
+          .single();
 
-      if (error) {
-        console.error(error);
-      } else {
+        if (error) {
+          console.error(error);
+          return;
+        }
+
+        // Sort exercises by set_number
+        workout.exercises.sort((a, b) => a.set_number - b.set_number);
+
         setWorkoutDetails(workout);
         setEquipmentData(
           workout.workout_equipment.map((item: any) => item.equipment)
         );
         setExercisesData(workout.exercises);
+      } catch (error) {
+        console.error("Error fetching workout details:", error);
       }
     };
 
@@ -94,7 +102,7 @@ export const WorkoutDetails = (): JSX.Element => {
       console.warn('No exercises available to start');
       return;
     }
-    
+
     try {
       console.log('Inserting workout start record into database');
       // Get current user ID
