@@ -32,6 +32,9 @@ import { HomeCycle } from "./pages/PeriodCycle/StartScreen";
 import WorkoutPlayer from "./pages/WorkoutPlayer";
 import EditWorkout from "./pages/Admin/EditWorkout";
 import { WorkoutsPage } from "./pages/WorkoutsPage";
+import { PeriodTrackerPage } from "./pages/PeriodTracker/PeriodTrackerPage";
+import { WaterIntakePage } from "./pages/WaterIntake/WaterIntakePage";
+import { AppleWatchPage } from "./pages/AppleWatch/AppleWatchPage";
 
 function App() {
   return (
@@ -68,6 +71,9 @@ function App() {
           <Route path="/period-cycle/home" element={<PrivateRoute component={HomeCycle} />} />
           <Route path="/workout-player/:id" element={<PrivateRoute component={WorkoutPlayer} />} />
           <Route path="/workouts" element={<PrivateRoute component={WorkoutsPage} />} />
+          <Route path="/period-tracker" element={<PrivateRoute component={PeriodTrackerPage} />} />
+          <Route path="/water-intake" element={<PrivateRoute component={WaterIntakePage} />} />
+          <Route path="/apple-watch" element={<PrivateRoute component={AppleWatchPage} />} />
 
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />

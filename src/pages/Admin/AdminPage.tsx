@@ -5,7 +5,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import {
     Dialog,
     DialogTrigger,
@@ -16,7 +16,7 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog";
 
-import { Loader2Icon, PlusCircleIcon } from "lucide-react";
+import { Loader2Icon, PlusCircleIcon, User2Icon, Target, Trophy, Calendar, Clock, Activity, Heart, AlertCircle, Scale, Utensils } from "lucide-react";
 import UserProgress from "./UserProgress";
 import { useAdmin } from "@/hooks/useAdmin";
 
@@ -34,17 +34,15 @@ interface AdminWorkout {
 
 interface AdminUser {
     id: string;
-    email?: string;
-    profile?: {
-        full_name: string;
-        fitness_goal: string;
-        weekly_workout_days: number;
-        preferred_workout_time: string;
-        fitness_level: string;
-        health_conditions: string[];
-        target_weight: string;
-        dietary_preferences: string[];
-    };
+    email: string;
+    full_name?: string;
+    fitness_goal?: string;
+    weekly_workout_days?: number;
+    preferred_workout_time?: string;
+    fitness_level?: string;
+    health_conditions?: string[];
+    target_weight?: string;
+    dietary_preferences?: string[];
 }
 
 interface Exercise {
@@ -143,25 +141,28 @@ export const AdminPage = () => {
 
     const fetchUsers = async () => {
         try {
+            // First get all profiles with their goals and preferences
             const { data: profiles, error: profilesError } = await supabaseAdmin
                 .from('profiles')
-                .select('*');
+                .select(`
+                    id,
+                    full_name,
+                    fitness_goal,
+                    weekly_workout_days,
+                    preferred_workout_time,
+                    fitness_level,
+                    health_conditions,
+                    target_weight,
+                    dietary_preferences,
+                    email
+                `);
 
-            if (profilesError) throw profilesError;
+            if (profilesError) {
+                console.error('Error fetching profiles:', profilesError);
+                return;
+            }
 
-            const { data: authUsers, error: authError } = await supabaseAdmin
-                .from('auth.users')
-                .select('id, email');
-
-            if (authError) throw authError;
-
-            // Combine auth users with their profiles
-            const combinedUsers = authUsers.map(user => ({
-                ...user,
-                profile: profiles.find(profile => profile.id === user.id)
-            }));
-
-            setUsers(combinedUsers);
+            setUsers(profiles || []);
         } catch (error) {
             console.error('Error fetching users:', error);
         }
@@ -382,23 +383,49 @@ export const AdminPage = () => {
         }
     };
 
-    const UserCard = ({ user }: { user: AdminUser }) => (
-        <div className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow">
-            <div className="flex justify-between items-start">
-                <div>
-                    <h3 className="font-semibold">{user.profile?.full_name || user.email}</h3>
-                    <p className="text-sm text-gray-500">{user.email}</p>
-                </div>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedUser(user)}
-                >
-                    Details
-                </Button>
-            </div>
-        </div>
-    );
+    const UserCard = ({ user }: { user: AdminUser }) => {
+        const goalLabels: Record<string, string> = {
+            weight_loss: 'Gewichtsverlust',
+            muscle_gain: 'Muskelaufbau',
+            endurance: 'Ausdauer verbessern',
+            flexibility: 'Flexibilität verbessern',
+            general_fitness: 'Allgemeine Fitness'
+        };
+
+        return (
+            <Card className="hover:shadow-md transition-shadow">
+                <CardHeader>
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <CardTitle>{user.full_name || 'Unnamed User'}</CardTitle>
+                            <CardDescription>{user.email}</CardDescription>
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedUser(user)}
+                        >
+                            Details
+                        </Button>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2">
+                            <span className="font-medium">Ziel:</span>
+                            <span>{goalLabels[user.fitness_goal || ''] || 'Nicht angegeben'}</span>
+                        </div>
+                        {user.weekly_workout_days && (
+                            <div className="flex items-center gap-2">
+                                <span className="font-medium">Training/Woche:</span>
+                                <span>{user.weekly_workout_days} Tage</span>
+                            </div>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    };
 
     const UserDetails = ({ user }: { user: AdminUser }) => {
         const goalLabels: Record<string, string> = {
@@ -410,9 +437,9 @@ export const AdminPage = () => {
         };
 
         const timeLabels: Record<string, string> = {
-            morning: 'Morgens',
-            afternoon: 'Nachmittags',
-            evening: 'Abends',
+            morning: 'Morgens (6:00 - 11:00)',
+            afternoon: 'Nachmittags (11:00 - 17:00)',
+            evening: 'Abends (17:00 - 22:00)',
             flexible: 'Flexibel'
         };
 
@@ -422,55 +449,165 @@ export const AdminPage = () => {
             advanced: 'Sehr Fortgeschritten'
         };
 
+        const healthConditionLabels: Record<string, string> = {
+            back_pain: 'Rückenschmerzen',
+            joint_issues: 'Gelenkprobleme',
+            heart_condition: 'Herzprobleme',
+            diabetes: 'Diabetes',
+            asthma: 'Asthma'
+        };
+
+        const dietaryLabels: Record<string, string> = {
+            vegetarian: 'Vegetarisch',
+            vegan: 'Vegan',
+            gluten_free: 'Glutenfrei',
+            lactose_free: 'Laktosefrei',
+            low_carb: 'Low Carb'
+        };
+
         return (
             <Dialog open={!!user} onOpenChange={() => setSelectedUser(null)}>
-                <DialogContent className="max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>{user.profile?.full_name || user.email}</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                        <div>
-                            <h4 className="font-semibold">Fitnessziel</h4>
-                            <p>{goalLabels[user.profile?.fitness_goal || ''] || 'Nicht angegeben'}</p>
-                        </div>
-                        <div>
-                            <h4 className="font-semibold">Trainingstage pro Woche</h4>
-                            <p>{user.profile?.weekly_workout_days || 'Nicht angegeben'}</p>
-                        </div>
-                        <div>
-                            <h4 className="font-semibold">Bevorzugte Trainingszeit</h4>
-                            <p>{timeLabels[user.profile?.preferred_workout_time || ''] || 'Nicht angegeben'}</p>
-                        </div>
-                        <div>
-                            <h4 className="font-semibold">Fitnesslevel</h4>
-                            <p>{levelLabels[user.profile?.fitness_level || ''] || 'Nicht angegeben'}</p>
-                        </div>
-                        {user.profile?.health_conditions?.length > 0 && (
-                            <div>
-                                <h4 className="font-semibold">Gesundheitliche Einschränkungen</h4>
-                                <ul className="list-disc pl-4">
-                                    {user.profile.health_conditions.map(condition => (
-                                        <li key={condition}>{condition}</li>
-                                    ))}
-                                </ul>
+                <DialogContent className="max-w-3xl p-0 gap-0 bg-white">
+                    <DialogTitle className="sr-only">
+                        Benutzerdetails für {user.full_name || user.email}
+                    </DialogTitle>
+
+                    {/* Header Section with Gradient */}
+                    <div className="bg-gradient-to-br from-[#92A3FD] to-[#9DCEFF] p-8 rounded-t-lg text-white">
+                        <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
+                                <User2Icon className="w-8 h-8 text-white" />
                             </div>
-                        )}
-                        {user.profile?.target_weight && (
                             <div>
-                                <h4 className="font-semibold">Zielgewicht</h4>
-                                <p>{user.profile.target_weight} kg</p>
+                                <h2 className="text-2xl font-bold">
+                                    {user.full_name || 'Unnamed User'}
+                                </h2>
+                                <p className="text-white/80">{user.email}</p>
                             </div>
-                        )}
-                        {user.profile?.dietary_preferences?.length > 0 && (
-                            <div>
-                                <h4 className="font-semibold">Ernährungsvorlieben</h4>
-                                <ul className="list-disc pl-4">
-                                    {user.profile.dietary_preferences.map(pref => (
-                                        <li key={pref}>{pref}</li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
+                        </div>
+                    </div>
+
+                    {/* Content Section */}
+                    <div className="p-6 max-h-[70vh] overflow-y-auto">
+                        <div className="grid gap-6">
+                            {/* Main Goals Card */}
+                            <Card className="border-none shadow-lg bg-gradient-to-br from-[#92A3FD]/10 to-[#9DCEFF]/10">
+                                <CardHeader className="border-b pb-4">
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Target className="w-5 h-5 text-[#92A3FD]" />
+                                        Hauptziele
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="pt-4">
+                                    <div className="grid gap-4">
+                                        <div className="flex items-center gap-4 p-3 bg-white rounded-lg shadow-sm">
+                                            <div className="w-10 h-10 rounded-full bg-[#92A3FD]/10 flex items-center justify-center">
+                                                <Trophy className="w-5 h-5 text-[#92A3FD]" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-gray-500">Fitnessziel</p>
+                                                <p className="font-medium">{goalLabels[user.fitness_goal || ''] || 'Nicht angegeben'}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4 p-3 bg-white rounded-lg shadow-sm">
+                                            <div className="w-10 h-10 rounded-full bg-[#92A3FD]/10 flex items-center justify-center">
+                                                <Calendar className="w-5 h-5 text-[#92A3FD]" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-gray-500">Trainingstage pro Woche</p>
+                                                <p className="font-medium">{user.weekly_workout_days || 'Nicht angegeben'} Tage</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4 p-3 bg-white rounded-lg shadow-sm">
+                                            <div className="w-10 h-10 rounded-full bg-[#92A3FD]/10 flex items-center justify-center">
+                                                <Clock className="w-5 h-5 text-[#92A3FD]" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-gray-500">Bevorzugte Trainingszeit</p>
+                                                <p className="font-medium">{timeLabels[user.preferred_workout_time || ''] || 'Nicht angegeben'}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4 p-3 bg-white rounded-lg shadow-sm">
+                                            <div className="w-10 h-10 rounded-full bg-[#92A3FD]/10 flex items-center justify-center">
+                                                <Activity className="w-5 h-5 text-[#92A3FD]" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-gray-500">Fitnesslevel</p>
+                                                <p className="font-medium">{levelLabels[user.fitness_level || ''] || 'Nicht angegeben'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Health Conditions Card */}
+                            {user.health_conditions?.length > 0 && (
+                                <Card className="border-none shadow-lg">
+                                    <CardHeader className="border-b pb-4">
+                                        <CardTitle className="flex items-center gap-2">
+                                            <Heart className="w-5 h-5 text-[#92A3FD]" />
+                                            Gesundheitliche Einschränkungen
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="pt-4">
+                                        <div className="grid gap-2">
+                                            {user.health_conditions.map(condition => (
+                                                <div key={condition} className="flex items-center gap-3 p-2 bg-gray-50 rounded-md">
+                                                    <AlertCircle className="w-4 h-4 text-[#92A3FD]" />
+                                                    <span>{healthConditionLabels[condition] || condition}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+
+                            {/* Target Weight Card */}
+                            {user.target_weight && (
+                                <Card className="border-none shadow-lg">
+                                    <CardHeader className="border-b pb-4">
+                                        <CardTitle className="flex items-center gap-2">
+                                            <Scale className="w-5 h-5 text-[#92A3FD]" />
+                                            Zielgewicht
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="pt-4">
+                                        <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                                            <div className="w-10 h-10 rounded-full bg-[#92A3FD]/10 flex items-center justify-center">
+                                                <Target className="w-5 h-5 text-[#92A3FD]" />
+                                            </div>
+                                            <div>
+                                                <p className="text-2xl font-bold text-[#92A3FD]">{user.target_weight} kg</p>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+
+                            {/* Dietary Preferences Card */}
+                            {user.dietary_preferences?.length > 0 && (
+                                <Card className="border-none shadow-lg">
+                                    <CardHeader className="border-b pb-4">
+                                        <CardTitle className="flex items-center gap-2">
+                                            <Utensils className="w-5 h-5 text-[#92A3FD]" />
+                                            Ernährungsvorlieben
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="pt-4">
+                                        <div className="flex flex-wrap gap-2">
+                                            {user.dietary_preferences.map(pref => (
+                                                <div
+                                                    key={pref}
+                                                    className="px-3 py-1 bg-[#92A3FD]/10 text-[#92A3FD] rounded-full text-sm font-medium"
+                                                >
+                                                    {dietaryLabels[pref] || pref}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </div>
                     </div>
                 </DialogContent>
             </Dialog>

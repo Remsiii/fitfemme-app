@@ -1,0 +1,34 @@
+.calendar-container {
+    --cal-color-primary: #92A3FD;
+    --cal-font-family: inherit;
+    --cal-border-radius: 0.5rem;
+    --cal-day-selected-bg: #92A3FD;
+    --cal-day-hover-bg: rgba(146, 163, 253, 0.1);
+    --cal-header-color: #4B5563;
+    --cal-border-color: #E5E7EB;
+}
+
+.period-calendar {
+    width: 100%;
+    border: 1px solid var(--cal-border-color);
+    border-radius: var(--cal-border-radius);
+    padding: 1rem;
+}
+
+.period-calendar .calendar-header {
+    color: var(--cal-header-color);
+    font-weight: 500;
+}
+
+.period-calendar .calendar-days {
+    font-weight: normal;
+}
+
+.period-calendar .calendar-day-selected {
+    background-color: var(--cal-day-selected-bg) !important;
+    color: white !important;
+}
+
+.period-calendar .calendar-day:hover:not(.calendar-day-selected) {
+    background-color: var(--cal-day-hover-bg);
+}

@@ -10,7 +10,7 @@ import { Button } from "./components/ui/button";
 import { Card, CardContent } from "./components/ui/card";
 import { Progress } from "./components/ui/progress";
 import { ScrollArea } from "./components/ui/scroll-area";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeftIcon } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -44,6 +44,7 @@ export const Home = (): JSX.Element => {
   const { t } = useTranslation();
   const [currentHeartRate, setCurrentHeartRate] = useState(72);
   const navigate = useNavigate();
+  const location = useLocation();
   const [profile, setProfile] = useState<UserProfile>({
     name: "",
   });
@@ -115,19 +116,19 @@ export const Home = (): JSX.Element => {
   }, []);
 
   const navigateToAppleWatchOverview = () => {
-    navigate('/apple-watch-overview');
+    navigate('/apple-watch', { state: { from: location.pathname } });
   };
 
   const navigateToWaterIntake = () => {
-    navigate("/waterIntake");
+    navigate("/water-intake", { state: { from: location.pathname } });
   };
 
   const navigateToPeriodTracker = () => {
-    navigate("/periodTracker");
+    navigate("/period-tracker", { state: { from: location.pathname } });
   };
 
   const navigateToAllWorkouts = () => {
-    navigate('/workouts');
+    navigate('/workouts', { state: { from: location.pathname } });
   };
 
   return (
