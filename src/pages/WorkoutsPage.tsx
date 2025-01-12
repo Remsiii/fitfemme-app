@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeftIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/lib/supabase";
 import { useTranslation } from "react-i18next";
+import { CheckCircle2 } from "lucide-react";
 
 interface WorkoutData {
   id: number;
@@ -24,7 +25,10 @@ interface AssignedWorkout {
   workout_id: number;
   assigned_date: string;
   completed: boolean;
-  workout: WorkoutData;
+  workout: {
+    name: string;
+    description: string;
+  };
 }
 
 export function WorkoutsPage() {
@@ -150,21 +154,82 @@ export function WorkoutsPage() {
         </div>
       )}
 
+      <TabsContent value="activity" className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Upcoming Workouts</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {assignedWorkouts.length > 0 ? (
+              <div className="space-y-4">
+                {assignedWorkouts
+                  .filter(workout => !workout.completed)
+                  .sort((a, b) => new Date(a.assigned_date).getTime() - new Date(b.assigned_date).getTime())
+                  .map((assigned) => (
+                    <div key={assigned.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <h3 className="font-medium">{assigned.workout.name}</h3>
+                        <p className="text-sm text-gray-500">
+                          Datum: {new Date(assigned.assigned_date).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        onClick={() => markWorkoutComplete(assigned.id)}
+                      >
+                        Als erledigt markieren
+                      </Button>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <div className="text-center py-4 text-gray-500">
+                Keine anstehenden Workouts
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Completed Workouts</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {assignedWorkouts
+              .filter(workout => workout.completed)
+              .sort((a, b) => new Date(b.assigned_date).getTime() - new Date(a.assigned_date).getTime())
+              .map((assigned) => (
+                <div key={assigned.id} className="flex items-center justify-between p-4 border rounded-lg mb-4">
+                  <div>
+                    <h3 className="font-medium">{assigned.workout.name}</h3>
+                    <p className="text-sm text-gray-500">
+                      Abgeschlossen am: {new Date(assigned.assigned_date).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+                </div>
+              ))}
+          </CardContent>
+        </Card>
+      </TabsContent>
+
       {/* Bestehende Workouts Liste */}
       <div className="mb-6 overflow-x-auto">
         <div className="flex space-x-2 pb-2">
           {categories.map((category) => (
             <Button
               key={category}
-              variant={selectedCategory === category ? "default" : "outline"}
-              className={`${
-                selectedCategory === category
-                  ? "bg-gradient-to-b from-[#92A3FD] to-[#9DCEFF] text-white"
-                  : ""
-              } capitalize whitespace-nowrap`}
               onClick={() => setSelectedCategory(category)}
+              variant={selectedCategory === category ? "default" : "outline"}
+              className={`
+                whitespace-nowrap
+                ${selectedCategory === category 
+                  ? "bg-[#92A3FD] text-white hover:bg-[#92A3FD]/90"
+                  : "bg-white text-gray-700 hover:bg-gray-100"
+                }
+              `}
             >
-              {t(category)}
+              {t(`workouts.categories.${category}`)}
             </Button>
           ))}
         </div>

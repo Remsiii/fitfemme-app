@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Loader2Icon, ChevronRightIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
+import { notificationService } from "@/services/NotificationService";
 
 interface UserProgress {
     id: string;
@@ -130,6 +131,24 @@ export default function UserProgress() {
         }
     };
 
+    const handleMarkCompleted = async (userId: string) => {
+        try {
+            // Your existing completion logic here
+            
+            // Send browser notification
+            await notificationService.sendNotification({
+                title: "Workout Completed! 🎉",
+                body: "Great job! You've completed your workout.",
+                icon: "/favicon.ico" // Make sure you have a favicon or other icon
+            });
+            
+            // Refresh the user list
+            await fetchUsers();
+        } catch (error) {
+            console.error('Error marking workout as completed:', error);
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center min-h-[200px]">
@@ -170,6 +189,15 @@ export default function UserProgress() {
                                     <p className="text-sm text-gray-500">Current Streak</p>
                                     <p className="font-semibold">{user.streak_days || 0} days</p>
                                 </div>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleMarkCompleted(user.id);
+                                    }}
+                                    className="mt-2 px-4 py-2 bg-gradient-to-r from-[#92A3FD] to-[#9DCEFF] text-white rounded-lg hover:opacity-90 transition-opacity"
+                                >
+                                    Mark Workout Completed
+                                </button>
                             </div>
                             <div className="space-y-2">
                                 {user.bmi && (

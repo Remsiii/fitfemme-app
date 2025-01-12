@@ -1,87 +1,107 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trash2, ArrowLeftCircleIcon } from "lucide-react";
+import { Trash2, ArrowLeftCircleIcon, Bell } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
+import { supabase } from "@/lib/supabase";
+import { notificationService } from "@/services/NotificationService";
+import { formatDistanceToNowStrict, format } from "date-fns";
+import { de } from "date-fns/locale";
 
 interface Notification {
-  id: number;
-  title: string;
+  id: string;
+  type: string;
   message: string;
-  timestamp: string;
-  avatarBg: string;
+  read: boolean;
+  created_at: string;
 }
-
-const notificationsData = [
-  {
-    id: 1,
-    title: "Hey, it's time for lunch",
-    message: "You have a new notification",
-    timestamp: "About 1 minutes ago",
-    avatarBg: "bg-gradient-to-b from-[#92A3FD] to-[#9DCEFF]",
-  },
-  {
-    id: 2,
-    title: "Don't miss your lowerbody workout",
-    message: "You have a new notification",
-    timestamp: "About 3 hours ago",
-    avatarBg: "bg-gradient-to-b from-[#C58BF2] to-[#EEA4CE]",
-  },
-  {
-    id: 3,
-    title: "Hey, let's add some meals for your b..",
-    message: "You have a new notification",
-    timestamp: "About 3 hours ago",
-    avatarBg: "bg-gradient-to-b from-[#92A3FD] to-[#9DCEFF]",
-  },
-  {
-    id: 4,
-    title: "Congratulations, You have finished A..",
-    message: "You have a new notification",
-    timestamp: "29 May",
-    avatarBg: "bg-gradient-to-b from-[#92A3FD] to-[#9DCEFF]",
-  },
-  {
-    id: 5,
-    title: "Hey, it's time for lunch",
-    message: "You have a new notification",
-    timestamp: "8 April",
-    avatarBg: "bg-gradient-to-b from-[#92A3FD] to-[#9DCEFF]",
-  },
-  {
-    id: 6,
-    title: "Ups, You have missed your Lowerbo...",
-    message: "You have a new notification",
-    timestamp: "3 April",
-    avatarBg: "bg-gradient-to-b from-[#C58BF2] to-[#EEA4CE]",
-  },
-];
 
 export const Notification = (): JSX.Element => {
   const navigate = useNavigate();
-  const [swipedId, setSwipedId] = useState<number | null>(null);
+  const [swipedId, setSwipedId] = useState<string | null>(null);
   const startX = useRef<number | null>(null);
   const currentX = useRef<number | null>(null);
-  const [translations, setTranslations] = useState<{ [key: number]: number }>({});
-  const [notifications, setNotifications] = useState(notificationsData);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [translations, setTranslations] = useState<{ [key: string]: number }>({});
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const handleTouchStart = (e: TouchEvent | MouseEvent, id: number) => {
-    if (deletingId !== null) return; // Prevent interaction during deletion
+  useEffect(() => {
+    const setupNotifications = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Request notification permission for browser notifications
+      await notificationService.requestPermission();
+
+      // Subscribe to user notifications
+      notificationService.subscribeToUserNotifications(user.id);
+
+      // Fetch initial notifications
+      fetchNotifications();
+
+      // Subscribe to real-time notifications
+      const channel = supabase
+        .channel('notifications')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            const newNotification = payload.new as Notification;
+            setNotifications(prev => [newNotification, ...prev]);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+        if (user) {
+          notificationService.unsubscribeFromUserNotifications(user.id);
+        }
+      };
+    };
+
+    setupNotifications();
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setNotifications(data || []);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+
+  const handleTouchStart = (e: TouchEvent | MouseEvent, id: string) => {
+    if (deletingId !== null) return;
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     startX.current = clientX;
     currentX.current = clientX;
   };
 
-  const handleTouchMove = (e: TouchEvent | MouseEvent, id: number) => {
+  const handleTouchMove = (e: TouchEvent | MouseEvent, id: string) => {
     if (!startX.current || deletingId !== null) return;
-    
+
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     currentX.current = clientX;
-    
+
     const diff = startX.current - clientX;
     const translation = Math.min(Math.max(diff, 0), 100);
 
@@ -91,10 +111,10 @@ export const Notification = (): JSX.Element => {
     }));
   };
 
-  const handleTouchEnd = (id: number) => {
+  const handleTouchEnd = async (id: string) => {
     if (currentX.current && startX.current) {
       const diff = startX.current - currentX.current;
-      
+
       if (diff > 50) {
         setSwipedId(id);
         setTranslations(prev => ({
@@ -108,158 +128,150 @@ export const Notification = (): JSX.Element => {
         }));
       }
     }
-    
     startX.current = null;
     currentX.current = null;
   };
 
-  const handleDelete = async (id: number) => {
-    setDeletingId(id);
-    
-    // First animate the notification to the right
-    setTranslations(prev => ({
-      ...prev,
-      [id]: window.innerWidth
-    }));
+  const deleteNotification = async (id: string) => {
+    try {
+      setDeletingId(id);
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', id);
 
-    // Wait for the slide animation
-    await new Promise(resolve => setTimeout(resolve, 300));
+      if (error) throw error;
 
-    // Remove the notification
-    setNotifications(prev => prev.filter(n => n.id !== id));
-    setSwipedId(null);
-    setTranslations(prev => {
-      const newTranslations = { ...prev };
-      delete newTranslations[id];
-      return newTranslations;
-    });
-    
-    // Clear deleting state
-    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    } finally {
       setDeletingId(null);
-    }, 300);
+      setSwipedId(null);
+    }
   };
 
-  const handleClearAll = async () => {
-    // Animate all notifications to the right
-    const newTranslations: { [key: number]: number } = {};
-    notifications.forEach(n => {
-      newTranslations[n.id] = window.innerWidth;
-    });
-    setTranslations(newTranslations);
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
 
-    // Wait for animation
-    await new Promise(resolve => setTimeout(resolve, 300));
+    if (isToday) {
+      return formatDistanceToNowStrict(date, { addSuffix: true, locale: de });
+    }
 
-    // Clear all notifications
-    setNotifications([]);
-    setSwipedId(null);
-    setTranslations({});
+    return format(date, 'dd.MM.yyyy', { locale: de });
+  };
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'message':
+        return "bg-gradient-to-b from-[#92A3FD] to-[#9DCEFF]";
+      case 'workout_completed':
+        return "bg-gradient-to-b from-[#C58BF2] to-[#EEA4CE]";
+      default:
+        return "bg-gradient-to-b from-[#92A3FD] to-[#9DCEFF]";
+    }
   };
 
   return (
-    <div className="bg-white flex justify-center w-full min-h-screen">
-      <div className="bg-white w-[375px] flex flex-col">
-        <header className="flex items-center justify-between px-8 pt-10 pb-6">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="w-8 h-8 bg-[#f7f8f8] rounded-lg"
-            onClick={() => navigate('/home')}
-          >
-            <ArrowLeftCircleIcon className="h-4 w-4" />
-          </Button>
-
-          <h1 className="font-bold text-base text-black-color">Notification</h1>
-
-          <Button
-            variant="ghost"
-            onClick={handleClearAll}
-            className={cn(
-              "text-sm font-medium transition-colors",
-              notifications.length > 0 
-                ? "text-red-500 hover:text-red-600" 
-                : "text-gray-400"
-            )}
-            disabled={notifications.length === 0}
-          >
-            Clear All
-          </Button>
-        </header>
-
-        <div className="p-4">
-          <AnimatePresence mode="popLayout">
-            {notifications.length === 0 ? (
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="flex flex-col items-center justify-center py-12 text-gray-400"
-              >
-                <Trash2 className="h-12 w-12 mb-4 opacity-50" />
-                <p className="text-sm">No notifications</p>
-              </motion.div>
-            ) : (
-              notifications.map((notification) => (
-                <motion.div
-                  key={notification.id}
-                  layout
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: window.innerWidth }}
-                  transition={{ 
-                    layout: { type: "spring", bounce: 0.2 },
-                    opacity: { duration: 0.2 }
-                  }}
-                  className="relative mb-4 touch-pan-y"
-                  onTouchStart={(e) => handleTouchStart(e.nativeEvent, notification.id)}
-                  onTouchMove={(e) => handleTouchMove(e.nativeEvent, notification.id)}
-                  onTouchEnd={() => handleTouchEnd(notification.id)}
-                  onMouseDown={(e) => handleTouchStart(e, notification.id)}
-                  onMouseMove={(e) => handleTouchMove(e, notification.id)}
-                  onMouseUp={() => handleTouchEnd(notification.id)}
-                  onMouseLeave={() => handleTouchEnd(notification.id)}
-                >
-                  <Card
-                    className="transition-transform duration-200"
-                    style={{
-                      transform: `translateX(-${translations[notification.id] || 0}px)`
-                    }}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3 py-2">
-                        <Avatar className={`w-10 h-10 ${notification.avatarBg}`} />
-                        <div className="flex-1">
-                          <p className="text-xs font-medium text-black-color">
-                            {notification.title}
-                          </p>
-                          <p className="text-[10px] text-gray-1">
-                            {notification.timestamp}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <div 
-                    className="absolute top-0 right-0 h-full flex items-center justify-center bg-red-500 transition-all duration-200"
-                    style={{
-                      width: `${translations[notification.id] || 0}px`
-                    }}
-                  >
-                    <Button
-                      variant="destructive"
-                      className="h-full bg-transparent hover:bg-transparent"
-                      onClick={() => handleDelete(notification.id)}
-                    >
-                      <Trash2 className="h-5 w-5 text-white" />
-                    </Button>
-                  </div>
-                </motion.div>
-              ))
-            )}
-          </AnimatePresence>
-        </div>
+    <div className="p-4 pb-24">
+      <div className="flex items-center justify-between mb-6">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate(-1)}
+        >
+          <ArrowLeftCircleIcon className="h-6 w-6" />
+        </Button>
+        <h1 className="text-xl font-semibold">Benachrichtigungen</h1>
+        <div className="w-6" /> {/* Spacer for alignment */}
       </div>
-    </div>
+
+      <AnimatePresence>
+        {notifications.map((notification) => (
+          <motion.div
+            key={notification.id}
+            initial={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Card className="mb-4 overflow-hidden">
+              <div
+                className="relative"
+                onTouchStart={(e) => handleTouchStart(e as TouchEvent, notification.id)}
+                onTouchMove={(e) => handleTouchMove(e as TouchEvent, notification.id)}
+                onTouchEnd={() => handleTouchEnd(notification.id)}
+                onMouseDown={(e) => handleTouchStart(e as MouseEvent, notification.id)}
+                onMouseMove={(e) => handleTouchMove(e as MouseEvent, notification.id)}
+                onMouseUp={() => handleTouchEnd(notification.id)}
+                onMouseLeave={() => handleTouchEnd(notification.id)}
+              >
+                <motion.div
+                  className="absolute top-0 right-0 bottom-0 flex items-center justify-center bg-red-500 text-white"
+                  initial={{ x: 100 }}
+                  animate={{ x: swipedId === notification.id ? 0 : 100 }}
+                  transition={{ duration: 0.2 }}
+                  style={{ width: 100 }}
+                >
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-white hover:text-white"
+                    onClick={() => deleteNotification(notification.id)}
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </Button>
+                </motion.div>
+
+                <motion.div
+                  className="bg-white"
+                  animate={{
+                    x: -(translations[notification.id] || 0)
+                  }}
+                  transition={{ duration: 0 }}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-4">
+                      <Avatar className="h-10 w-10">
+                        <img
+                          src="/icons/andree.jpg"
+                          alt="FitFemme Notification"
+                          className="h-full w-full object-cover"
+                        />
+                      </Avatar>
+                      <div className="flex-1 space-y-1">
+                        <p className={cn(
+                          "text-sm leading-none",
+                          !notification.read && "font-semibold"
+                        )}>
+                          {notification.message}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {formatTimestamp(notification.created_at)}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </motion.div>
+              </div>
+            </Card>
+          </motion.div>
+        ))}
+      </AnimatePresence>
+
+      {notifications.length === 0 && (
+        <div className="flex flex-col items-center justify-center mt-12 text-gray-500">
+          <img
+            src="https://instagram.fvie1-1.fna.fbcdn.net/v/t51.2885-19/473652778_601706832804935_8357838460986024120_n.jpg?stp=dst-jpg_s150x150_tt6&_nc_ht=instagram.fvie1-1.fna.fbcdn.net&_nc_cat=111&_nc_ohc=akClnRI26R0Q7kNvgHqq7Fy&_nc_gid=7bb7e444c1b24606abfcb55ad26ea746&edm=APoiHPcBAAAA&ccb=7-5&oh=00_AYCDRod4y7KXCcc2u5iNr5R3fDx7ygsbUUxbC3pL14n2Aw&oe=678A1DBF&_nc_sid=22de04"
+            alt="FitFemme Logo"
+            className="h-12 w-12 mb-4 rounded-full opacity-50"
+          />
+
+        </div >
+      )}
+    </div >
   );
 };
+
+export default Notification;

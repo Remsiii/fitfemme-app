@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { Home } from "./HomeScreen";
 import { ActivityScreen } from "./pages/ActivityScreen";
 import { SearchScreen } from "./pages/SearchScreen";
@@ -85,11 +85,13 @@ function App() {
           <Route path="/admin/users/:userId" element={<AdminRoute><UserDetailPage /></AdminRoute>} />
         </Routes>
       </main>
-      <div className="flex items-center gap-2">
-        <NotificationBell />
+      <div>
+        <div className="flex items-center gap-2">
+          <NotificationBell />
+        </div>
+        <BottomNavigation />
+        <Toaster />
       </div>
-      <BottomNavigation />
-      <Toaster />
     </div>
   );
 }
