@@ -36,6 +36,7 @@ import { Switch } from "../components/ui/switch";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from 'react-i18next';
+import { GoalsQuestionnaire } from "@/components/GoalsQuestionnaire";
 
 interface UserProfile {
   name: string;
@@ -53,8 +54,6 @@ const statsData = [
   { value: "", label: "Age" },
 ];
 
-
-
 export const Profile2 = (): JSX.Element => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -70,7 +69,7 @@ export const Profile2 = (): JSX.Element => {
     height: "",
     goal: "",
   });
-
+  const [showGoals, setShowGoals] = useState(false);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -126,7 +125,6 @@ export const Profile2 = (): JSX.Element => {
     fetchUserProfile();
   }, []);
 
-
   const accountItems = [
     {
       icon: <User2Icon className="w-5 h-5 text-gray-1" />,
@@ -161,7 +159,6 @@ export const Profile2 = (): JSX.Element => {
     },
   ];
 
-
   const handleLogout = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -175,7 +172,6 @@ export const Profile2 = (): JSX.Element => {
       });
     }
   };
-
 
   if (isLoading) {
     return (
@@ -247,6 +243,13 @@ export const Profile2 = (): JSX.Element => {
             >
               {t('Edit Profile')}
             </Button>
+            <Button
+              variant="outline"
+              className="mt-4"
+              onClick={() => setShowGoals(true)}
+            >
+              {t('Fitness Goals')}
+            </Button>
 
           </div>
         </div>
@@ -261,7 +264,6 @@ export const Profile2 = (): JSX.Element => {
             </Card>
           ))}
         </div>
-
 
         <div className="mt-8 space-y-6">
           <div className="space-y-4">
@@ -315,6 +317,10 @@ export const Profile2 = (): JSX.Element => {
           </Button>
         </div>
       </main>
+      <GoalsQuestionnaire 
+        open={showGoals} 
+        onOpenChange={setShowGoals}
+      />
     </div>
   );
 };

@@ -18,6 +18,7 @@ import {
 
 import { Loader2Icon, PlusCircleIcon } from "lucide-react";
 import UserProgress from "./UserProgress";
+import { useAdmin } from "@/hooks/useAdmin";
 
 interface AdminWorkout {
     id: number;
@@ -34,7 +35,16 @@ interface AdminWorkout {
 interface AdminUser {
     id: string;
     email?: string;
-    // Hier kannst du weitere Felder ergänzen, z. B. subscription_status, is_active, usw.
+    profile?: {
+        full_name: string;
+        fitness_goal: string;
+        weekly_workout_days: number;
+        preferred_workout_time: string;
+        fitness_level: string;
+        health_conditions: string[];
+        target_weight: string;
+        dietary_preferences: string[];
+    };
 }
 
 interface Exercise {
@@ -55,16 +65,19 @@ interface Workout {
     difficulty: string;
     calories_burn: number;
     exercises: Exercise[];
+    icon?: string;
 }
 
 export const AdminPage = () => {
     const navigate = useNavigate();
+    const { isAdmin, loading } = useAdmin();
     const [isLoading, setIsLoading] = useState(true);
     const [users, setUsers] = useState<AdminUser[]>([]);
     const [workouts, setWorkouts] = useState<Workout[]>([]);
     const [openWorkoutDialog, setOpenWorkoutDialog] = useState(false);
     const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
     const [isAddingExercise, setIsAddingExercise] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState(false);
     const [newWorkout, setNewWorkout] = useState({
         name: "",
         type: "",
@@ -74,6 +87,7 @@ export const AdminPage = () => {
         exercises_count: 0,
         calories_burned: 0,
         schedule_time: "",
+        icon: "",
     });
 
     const [newExercise, setNewExercise] = useState<Partial<Exercise>>({
@@ -86,6 +100,19 @@ export const AdminPage = () => {
     });
 
     const [activeTab, setActiveTab] = useState<'workouts' | 'users' | 'progress'>('workouts');
+    const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+
+    useEffect(() => {
+        if (!loading && !isAdmin) {
+            navigate('/home');
+            return;
+        }
+
+        if (!loading && isAdmin) {
+            fetchUsers();
+            fetchWorkouts();
+        }
+    }, [loading, isAdmin, navigate]);
 
     useEffect(() => {
         const checkAdmin = async () => {
@@ -93,23 +120,20 @@ export const AdminPage = () => {
                 data: { is_super_admin: true }
             });
 
-            // Falls du eine Admin-Prüfung hast, z. B. user.role === "admin"
-            // oder user-Id checkst, kannst du das hier tun.
             const {
                 data: { user },
             } = await supabaseAdmin.auth.getUser();
 
             if (!user) {
-                // Falls kein User eingeloggt -> redirect
                 navigate("/login");
                 return;
             }
 
-            // Hier könntest du das Admin-Recht prüfen, z. B. user.user_metadata?.is_admin
-            // if (!user.user_metadata?.is_admin) {
-            //   navigate("/");
-            //   return;
-            // }
+            // Add icon column if it doesn't exist
+            const { error: alterError } = await supabaseAdmin.rpc('add_icon_column_if_not_exists');
+            if (alterError) {
+                console.error("Error adding icon column:", alterError);
+            }
 
             setIsLoading(false);
         };
@@ -117,35 +141,29 @@ export const AdminPage = () => {
         checkAdmin();
     }, [navigate]);
 
-    useEffect(() => {
-        if (!isLoading) {
-            fetchUsers();
-            fetchWorkouts();
-        }
-    }, [isLoading]);
-
     const fetchUsers = async () => {
         try {
-            // auth.users ansprechen (System-Tabelle)
-            // Wenn du bestimmte Filter hast (z. B. Abo), kannst du das anpassen
-            // In Supabase kann man die auth.users nicht direkt mit RLS abfragen,
-            // evtl. brauchst du einen Service-Role Key oder Policies.
-            // Example: 
-            const { data, error } = await supabaseAdmin.auth.admin.listUsers();
-            if (error) {
-                console.error("Error fetching users:", error);
-                return;
-            }
-            if (data?.users) {
-                // data.users ist ein Array
-                const userList = data.users.map((u) => ({
-                    id: u.id,
-                    email: u.email,
-                }));
-                setUsers(userList);
-            }
-        } catch (err) {
-            console.error("Unknown error fetching users:", err);
+            const { data: profiles, error: profilesError } = await supabaseAdmin
+                .from('profiles')
+                .select('*');
+
+            if (profilesError) throw profilesError;
+
+            const { data: authUsers, error: authError } = await supabaseAdmin
+                .from('auth.users')
+                .select('id, email');
+
+            if (authError) throw authError;
+
+            // Combine auth users with their profiles
+            const combinedUsers = authUsers.map(user => ({
+                ...user,
+                profile: profiles.find(profile => profile.id === user.id)
+            }));
+
+            setUsers(combinedUsers);
+        } catch (error) {
+            console.error('Error fetching users:', error);
         }
     };
 
@@ -171,6 +189,22 @@ export const AdminPage = () => {
 
     const handleAddWorkout = async () => {
         try {
+            // First, ensure the icon column exists
+            const { error: checkError } = await supabaseAdmin
+                .from('workouts')
+                .select('icon')
+                .limit(1);
+
+            if (checkError && checkError.message.includes('column "icon" does not exist')) {
+                // Column doesn't exist, create it
+                const { error: alterError } = await supabaseAdmin.rpc('add_icon_column_if_not_exists');
+                if (alterError) {
+                    console.error("Error adding icon column:", alterError);
+                    return;
+                }
+            }
+
+            // Now proceed with the insert
             const { error } = await supabaseAdmin.from("workouts").insert({
                 name: newWorkout.name,
                 type: newWorkout.type,
@@ -180,6 +214,7 @@ export const AdminPage = () => {
                 exercises_count: newWorkout.exercises_count,
                 calories_burned: newWorkout.calories_burned,
                 schedule_time: newWorkout.schedule_time || null,
+                icon: newWorkout.icon || null,
             });
 
             if (error) {
@@ -187,7 +222,6 @@ export const AdminPage = () => {
                 return;
             }
 
-            // Workout erfolgreich angelegt -> Liste neu laden und Dialog schließen
             await fetchWorkouts();
             setOpenWorkoutDialog(false);
             setNewWorkout({
@@ -199,9 +233,10 @@ export const AdminPage = () => {
                 exercises_count: 0,
                 calories_burned: 0,
                 schedule_time: "",
+                icon: "",
             });
-        } catch (err) {
-            console.error("Unknown error inserting workout:", err);
+        } catch (error) {
+            console.error("Error adding workout:", error);
         }
     };
 
@@ -307,10 +342,157 @@ export const AdminPage = () => {
         }
     };
 
-    return (
-        <div className="bg-white min-h-screen p-6">
-            <h1 className="text-xl font-semibold mb-4">Admin Dashboard</h1>
+    const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        try {
+            const file = event.target.files?.[0];
+            if (!file) return;
 
+            setUploadingImage(true);
+
+            // Create a unique file name
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+            const filePath = `${fileName}`; // Simplified path
+
+            // Upload the file to Supabase storage
+            const { error: uploadError } = await supabaseAdmin.storage
+                .from('workout-images')  // Using the new bucket name
+                .upload(filePath, file);
+
+            if (uploadError) {
+                console.error('Upload error:', uploadError);
+                throw uploadError;
+            }
+
+            // Get the public URL
+            const { data: { publicUrl } } = supabaseAdmin.storage
+                .from('workout-images')  // Using the new bucket name
+                .getPublicUrl(filePath);
+
+            // Update the form state with the full URL
+            setNewWorkout(prev => ({
+                ...prev,
+                icon: publicUrl
+            }));
+
+        } catch (error) {
+            console.error('Error uploading image:', error);
+        } finally {
+            setUploadingImage(false);
+        }
+    };
+
+    const UserCard = ({ user }: { user: AdminUser }) => (
+        <div className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow">
+            <div className="flex justify-between items-start">
+                <div>
+                    <h3 className="font-semibold">{user.profile?.full_name || user.email}</h3>
+                    <p className="text-sm text-gray-500">{user.email}</p>
+                </div>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedUser(user)}
+                >
+                    Details
+                </Button>
+            </div>
+        </div>
+    );
+
+    const UserDetails = ({ user }: { user: AdminUser }) => {
+        const goalLabels: Record<string, string> = {
+            weight_loss: 'Gewichtsverlust',
+            muscle_gain: 'Muskelaufbau',
+            endurance: 'Ausdauer verbessern',
+            flexibility: 'Flexibilität verbessern',
+            general_fitness: 'Allgemeine Fitness'
+        };
+
+        const timeLabels: Record<string, string> = {
+            morning: 'Morgens',
+            afternoon: 'Nachmittags',
+            evening: 'Abends',
+            flexible: 'Flexibel'
+        };
+
+        const levelLabels: Record<string, string> = {
+            beginner: 'Anfänger',
+            intermediate: 'Fortgeschritten',
+            advanced: 'Sehr Fortgeschritten'
+        };
+
+        return (
+            <Dialog open={!!user} onOpenChange={() => setSelectedUser(null)}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>{user.profile?.full_name || user.email}</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div>
+                            <h4 className="font-semibold">Fitnessziel</h4>
+                            <p>{goalLabels[user.profile?.fitness_goal || ''] || 'Nicht angegeben'}</p>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold">Trainingstage pro Woche</h4>
+                            <p>{user.profile?.weekly_workout_days || 'Nicht angegeben'}</p>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold">Bevorzugte Trainingszeit</h4>
+                            <p>{timeLabels[user.profile?.preferred_workout_time || ''] || 'Nicht angegeben'}</p>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold">Fitnesslevel</h4>
+                            <p>{levelLabels[user.profile?.fitness_level || ''] || 'Nicht angegeben'}</p>
+                        </div>
+                        {user.profile?.health_conditions?.length > 0 && (
+                            <div>
+                                <h4 className="font-semibold">Gesundheitliche Einschränkungen</h4>
+                                <ul className="list-disc pl-4">
+                                    {user.profile.health_conditions.map(condition => (
+                                        <li key={condition}>{condition}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                        {user.profile?.target_weight && (
+                            <div>
+                                <h4 className="font-semibold">Zielgewicht</h4>
+                                <p>{user.profile.target_weight} kg</p>
+                            </div>
+                        )}
+                        {user.profile?.dietary_preferences?.length > 0 && (
+                            <div>
+                                <h4 className="font-semibold">Ernährungsvorlieben</h4>
+                                <ul className="list-disc pl-4">
+                                    {user.profile.dietary_preferences.map(pref => (
+                                        <li key={pref}>{pref}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
+        );
+    };
+
+    if (loading || isLoading) {
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <Loader2Icon className="w-8 h-8 animate-spin" />
+            </div>
+        );
+    }
+
+    if (!isAdmin) {
+        return null;
+    }
+
+    return (
+        <div className="container mx-auto p-4">
+            <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
+            
             <div className="flex gap-4 mb-6">
                 <Button
                     variant={activeTab === 'workouts' ? 'default' : 'outline'}
@@ -342,26 +524,16 @@ export const AdminPage = () => {
             ) : (
                 <>
                     {activeTab === 'users' && (
-                        <Card className="mb-8">
-                            <CardHeader className="p-4">
-                                <h2 className="text-base font-semibold">Users</h2>
-                            </CardHeader>
-                            <CardContent className="p-4 space-y-2">
-                                {users.length === 0 && <p className="text-sm text-gray-500">No users found.</p>}
-                                {users.map((user) => (
-                                    <div key={user.id} className="flex justify-between items-center text-sm p-2 hover:bg-gray-50 rounded">
-                                        <span>{user.email}</span>
-                                        <span className="text-xs text-gray-400">{user.id}</span>
-                                    </div>
-                                ))}
-                            </CardContent>
-                        </Card>
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                            {users.map(user => (
+                                <UserCard key={user.id} user={user} />
+                            ))}
+                        </div>
                     )}
-
+                    {selectedUser && <UserDetails user={selectedUser} />}
                     {activeTab === 'progress' && (
                         <UserProgress />
                     )}
-
                     {activeTab === 'workouts' && (
                         <Card className="mb-8">
                             <CardHeader className="p-4 flex items-center justify-between">
@@ -382,12 +554,42 @@ export const AdminPage = () => {
                                         </DialogHeader>
 
                                         <div className="flex flex-col gap-2 mt-4">
-                                            <label className="text-sm font-medium text-gray-700">Name</label>
-                                            <Input
-                                                type="text"
-                                                value={newWorkout.name}
-                                                onChange={(e) => setNewWorkout({ ...newWorkout, name: e.target.value })}
-                                            />
+                                            <div>
+                                                <label className="text-sm font-medium text-gray-700">Name</label>
+                                                <Input
+                                                    type="text"
+                                                    value={newWorkout.name}
+                                                    onChange={(e) =>
+                                                        setNewWorkout({ ...newWorkout, name: e.target.value })
+                                                    }
+                                                    placeholder="Workout name"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="text-sm font-medium text-gray-700">Workout Icon</label>
+                                                <div className="mt-1 flex items-center space-x-4">
+                                                    {newWorkout.icon && (
+                                                        <div className="w-16 h-16 rounded-lg bg-gray-100 overflow-hidden">
+                                                            <img
+                                                                src={newWorkout.icon}
+                                                                alt="Workout preview"
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                    <label className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                                        {uploadingImage ? 'Uploading...' : 'Upload Icon'}
+                                                        <input
+                                                            type="file"
+                                                            className="hidden"
+                                                            accept="image/*"
+                                                            onChange={handleImageUpload}
+                                                            disabled={uploadingImage}
+                                                        />
+                                                    </label>
+                                                </div>
+                                            </div>
 
                                             <label className="text-sm font-medium text-gray-700">Type</label>
                                             <Input

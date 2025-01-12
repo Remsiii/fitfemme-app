@@ -49,6 +49,7 @@ export const Home = (): JSX.Element => {
   });
   const [workouts, setWorkouts] = useState<WorkoutData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [failedImages, setFailedImages] = useState<Set<number>>(new Set());
 
   // Fetch user profile
   useEffect(() => {
@@ -125,21 +126,13 @@ export const Home = (): JSX.Element => {
     navigate("/periodTracker");
   };
 
+  const navigateToAllWorkouts = () => {
+    navigate('/workouts');
+  };
+
   return (
     <div className="bg-white flex flex-row justify-center w-full">
       <div className="bg-white w-[375px] h-[1527px] relative">
-        <div className="absolute top-24 right-7">
-          <Button
-            onClick={() => navigate("/apple-watch-overview")}
-            className="bg-gradient-to-r from-gray-800 to-gray-900 hover:from-gray-900 hover:to-black text-white rounded-full p-3 shadow-lg transition-all duration-300 hover:scale-105"
-          >
-            <img
-              src="/icons/apple_watch.png"
-              alt="Apple Watch Icon"
-              className="w-6 h-6"
-            />
-          </Button>
-        </div>
         <header className="flex justify-between items-center px-8 pt-10">
           <div className="flex flex-col">
             <span className="text-gray-2 text-sm">{t('Welcome Back')}</span>
@@ -261,11 +254,11 @@ export const Home = (): JSX.Element => {
         <div className="px-8 mt-8">
           <div className="border-t border-gray-200 my-4"></div> {/* Horizontale Trennlinie */}
           <div className="flex flex-col items-center">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-6 w-full">
               {/* Water Intake */}
               <div className="flex flex-col items-center">
                 <div
-                  className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-200 focus:ring focus:ring-blue-300 transition duration-200"
+                  className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-200 focus:ring focus:ring-blue-300 transition duration-200"
                   onClick={navigateToWaterIntake}
                   role="button"
                   tabIndex={0}
@@ -285,7 +278,7 @@ export const Home = (): JSX.Element => {
               {/* Period Tracker */}
               <div className="flex flex-col items-center">
                 <div
-                  className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center cursor-pointer hover:bg-red-200 focus:ring focus:ring-red-300 transition duration-200"
+                  className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center cursor-pointer hover:bg-red-200 focus:ring focus:ring-red-300 transition duration-200"
                   onClick={navigateToPeriodTracker}
                   role="button"
                   tabIndex={0}
@@ -296,35 +289,31 @@ export const Home = (): JSX.Element => {
                   <img
                     src="icons/period.svg"
                     alt="Period Tracker Icon"
-                    className="w-6 h-6"
+                    className="w-7 h-7"
                   />
                 </div>
                 <p className="text-sm mt-2 text-gray-700 text-center">Period Tracker</p>
               </div>
-            </div>
 
-
-            {/* Beispiel für ein Icon für Steps Tracking */}
-            <div className="flex flex-col items-center">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                <svg
-                  className="w-6 h-6 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
+              {/* Apple Watch */}
+              <div className="flex flex-col items-center">
+                <div
+                  className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 focus:ring focus:ring-gray-300 transition duration-200"
+                  onClick={navigateToAppleWatchOverview}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") navigateToAppleWatchOverview();
+                  }}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 3v12m0 0l3-3m-3 3l-3-3"
+                  <img
+                    src="/icons/apple_watch.png"
+                    alt="Apple Watch Icon"
+                    className="w-8 h-8"
                   />
-                </svg>
+                </div>
+                <p className="text-sm mt-2 text-gray-700 text-center">Apple Watch</p>
               </div>
-              <p className="text-sm mt-2 text-gray-700 text-center">
-                {t("Steps Tracker")}
-              </p>
             </div>
           </div>
           <div className="border-t border-gray-200 my-4"></div> {/* Horizontale Trennlinie */}
@@ -374,7 +363,7 @@ export const Home = (): JSX.Element => {
             <Button
               variant="ghost"
               className="text-[#92A3FD] hover:text-[#7B93FF] p-0"
-              onClick={() => navigate('/search')}
+              onClick={navigateToAllWorkouts}
             >
               {t('See More')}
             </Button>
@@ -393,12 +382,23 @@ export const Home = (): JSX.Element => {
                   onClick={() => navigate(`/workout-details/${workout.id}`)}
                 >
                   <CardContent className="flex items-center p-4">
-                    <div className="w-[50px] h-[50px] rounded-[12px] bg-[#F7F8F8] flex items-center justify-center mr-4">
-                      <img
-                        src={workout.icon ? `/workout-icons/${workout.icon}` : "/workout-icons/vector.png"}
-                        alt={workout.name}
-                        className="w-6 h-6"
-                      />
+                    <div className="w-[60px] h-[60px] rounded-[16px] bg-[#F7F8F8] flex items-center justify-center mr-4 overflow-hidden">
+                      {(!workout.icon || failedImages.has(workout.id)) ? (
+                        <div className="w-8 h-8 text-gray-400">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
+                        </div>
+                      ) : (
+                        <img
+                          src={workout.icon}
+                          alt={workout.name}
+                          className="w-full h-full object-cover"
+                          onError={() => {
+                            setFailedImages(prev => new Set([...prev, workout.id]));
+                          }}
+                        />
+                      )}
                     </div>
                     <div className="flex-1">
                       <h3 className="text-black-color font-medium mb-1">

@@ -44,6 +44,7 @@ interface Workout {
     calories_burned: number;
     schedule_time: string;
     exercises?: Exercise[];
+    icon?: string;
 }
 
 export default function EditWorkout() {
@@ -51,6 +52,7 @@ export default function EditWorkout() {
     const { workoutId } = useParams();
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState(false);
     const [workout, setWorkout] = useState<Workout | null>(null);
     const [exercises, setExercises] = useState<Exercise[]>([]);
     const [newExercise, setNewExercise] = useState({
@@ -324,6 +326,55 @@ export default function EditWorkout() {
         }
     };
 
+    const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        try {
+            const file = event.target.files?.[0];
+            if (!file || !workout) return;
+
+            setUploadingImage(true);
+
+            // Create a unique file name
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+            const filePath = `${fileName}`; // Simplified path
+
+            // Upload the file to Supabase storage
+            const { error: uploadError } = await supabaseAdmin.storage
+                .from('workout-images')  // Using the new bucket name
+                .upload(filePath, file);
+
+            if (uploadError) {
+                console.error('Upload error:', uploadError);
+                throw uploadError;
+            }
+
+            // Get the public URL
+            const { data: { publicUrl } } = supabaseAdmin.storage
+                .from('workout-images')  // Using the new bucket name
+                .getPublicUrl(filePath);
+
+            // Update the workout with the new icon
+            const { error: updateError } = await supabaseAdmin
+                .from('workouts')
+                .update({ icon: publicUrl })
+                .eq('id', workout.id);
+
+            if (updateError) {
+                throw updateError;
+            }
+
+            // Update local state
+            setWorkout(prev => prev ? { ...prev, icon: publicUrl } : null);
+            setToast({ message: 'Workout icon updated successfully', type: 'success' });
+
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            setToast({ message: 'Error uploading image. Please try again.', type: 'error' });
+        } finally {
+            setUploadingImage(false);
+        }
+    };
+
     const sensors = useSensors(
         useSensor(PointerSensor),
         useSensor(KeyboardSensor, {
@@ -393,9 +444,33 @@ export default function EditWorkout() {
                 >
                     ← Back to Admin
                 </Button>
-                <h1 className="text-2xl font-bold mb-4">
-                    {workout ? `Edit Workout: ${workout.name}` : 'Loading...'}
-                </h1>
+                <div className="flex items-start justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold mb-2">Edit Workout</h1>
+                        <p className="text-gray-600">Update workout details and exercises</p>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                        {workout.icon && (
+                            <div className="w-16 h-16 rounded-lg bg-gray-100 overflow-hidden">
+                                <img
+                                    src={workout.icon}
+                                    alt="Workout icon"
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
+                        )}
+                        <label className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            {uploadingImage ? 'Uploading...' : 'Change Icon'}
+                            <input
+                                type="file"
+                                className="hidden"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                                disabled={uploadingImage}
+                            />
+                        </label>
+                    </div>
+                </div>
             </div>
 
             <Card className="mb-8">
