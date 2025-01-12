@@ -33,6 +33,9 @@ import {
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
 import { Switch } from "../components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from 'react-i18next';
@@ -46,6 +49,7 @@ interface UserProfile {
   height?: string;
   avatar_url?: string;
   goal?: string;
+  full_name?: string;
 }
 
 const statsData = [
@@ -70,6 +74,15 @@ export const Profile2 = (): JSX.Element => {
     goal: "",
   });
   const [showGoals, setShowGoals] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState<UserProfile>({
+    name: "",
+    email: "",
+    age: "",
+    weight: "",
+    height: "",
+    full_name: "",
+  });
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -173,6 +186,57 @@ export const Profile2 = (): JSX.Element => {
     }
   };
 
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No user found");
+
+      const { error } = await supabase
+        .from("users")
+        .update({
+          full_name: editForm.full_name,
+          age: editForm.age,
+          weight: editForm.weight,
+          height: editForm.height,
+        })
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setProfile(prev => ({
+        ...prev,
+        name: editForm.full_name || prev.name,
+        age: editForm.age || prev.age,
+        weight: editForm.weight || prev.weight,
+        height: editForm.height || prev.height,
+      }));
+
+      // Update stats
+      statsData[0].value = editForm.height ? `${editForm.height}cm` : "N/A";
+      statsData[1].value = editForm.weight ? `${editForm.weight}kg` : "N/A";
+      statsData[2].value = editForm.age ? `${editForm.age}yo` : "N/A";
+
+      setIsEditDialogOpen(false);
+      toast({
+        title: "Success",
+        description: "Profile updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update profile",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -224,34 +288,94 @@ export const Profile2 = (): JSX.Element => {
       </header>
 
       <main className="flex-1 px-8 pb-20 overflow-y-auto">
-        <div className="flex flex-col px-8">
-          <div className="flex flex-col items-center">
-            <Avatar className="w-24 h-24">
-              {profile.avatar_url && (
-                <AvatarImage src={profile.avatar_url} />
-              )}
-              <AvatarFallback>{profile.name?.charAt(0)}</AvatarFallback>
-            </Avatar>
-            <div className="mt-4 text-center">
-              <h5 className="font-semibold text-xl">{profile.name}</h5>
-              <p className="text-gray-500 text-sm">{profile.email}</p>
-            </div>
-            <Button
-              variant="outline"
-              className="mt-4"
-              onClick={() => navigate("/profile/edit")}
-            >
-              {t('Edit Profile')}
-            </Button>
-            <Button
-              variant="outline"
-              className="mt-4"
-              onClick={() => setShowGoals(true)}
-            >
-              {t('Fitness Goals')}
-            </Button>
-
-          </div>
+        <div className="flex flex-col items-center px-8 py-6">
+          <Avatar className="w-24 h-24">
+            {profile.avatar_url && (
+              <AvatarImage src={profile.avatar_url} />
+            )}
+            <AvatarFallback>{profile.name?.charAt(0)}</AvatarFallback>
+          </Avatar>
+          <h2 className="mt-4 text-xl font-semibold">{profile.name}</h2>
+          <p className="text-gray-500">{profile.email}</p>
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={() => {
+                  setEditForm({
+                    ...profile,
+                    full_name: profile.name,
+                  });
+                }}
+              >
+                Edit Profile
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit Profile</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div>
+                  <Label htmlFor="full_name">Full Name</Label>
+                  <Input
+                    id="full_name"
+                    value={editForm.full_name}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, full_name: e.target.value }))}
+                    placeholder="Enter your full name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="age">Age</Label>
+                  <Input
+                    id="age"
+                    type="number"
+                    value={editForm.age}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, age: e.target.value }))}
+                    placeholder="Enter your age"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="height">Height (cm)</Label>
+                  <Input
+                    id="height"
+                    type="number"
+                    value={editForm.height}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, height: e.target.value }))}
+                    placeholder="Enter your height"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="weight">Weight (kg)</Label>
+                  <Input
+                    id="weight"
+                    type="number"
+                    value={editForm.weight}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, weight: e.target.value }))}
+                    placeholder="Enter your weight"
+                  />
+                </div>
+                <Button type="submit" disabled={isSaving} className="w-full">
+                  {isSaving ? (
+                    <>
+                      <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+          <Button
+            variant="outline"
+            className="mt-4"
+            onClick={() => setShowGoals(true)}
+          >
+            {t('Fitness Goals')}
+          </Button>
         </div>
 
         <div className="grid grid-cols-3 gap-4 mt-8">

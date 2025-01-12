@@ -98,7 +98,6 @@ export const AdminPage = () => {
     });
 
     const [activeTab, setActiveTab] = useState<'workouts' | 'users' | 'progress'>('workouts');
-    const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
 
     useEffect(() => {
         if (!loading && !isAdmin) {
@@ -393,20 +392,13 @@ export const AdminPage = () => {
         };
 
         return (
-            <Card className="hover:shadow-md transition-shadow">
+            <Card className="hover:shadow-md transition-shadow" onClick={() => navigate(`/admin/users/${user.id}`)}>
                 <CardHeader>
                     <div className="flex justify-between items-start">
                         <div>
                             <CardTitle>{user.full_name || 'Unnamed User'}</CardTitle>
                             <CardDescription>{user.email}</CardDescription>
                         </div>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedUser(user)}
-                        >
-                            Details
-                        </Button>
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -424,193 +416,6 @@ export const AdminPage = () => {
                     </div>
                 </CardContent>
             </Card>
-        );
-    };
-
-    const UserDetails = ({ user }: { user: AdminUser }) => {
-        const goalLabels: Record<string, string> = {
-            weight_loss: 'Gewichtsverlust',
-            muscle_gain: 'Muskelaufbau',
-            endurance: 'Ausdauer verbessern',
-            flexibility: 'Flexibilität verbessern',
-            general_fitness: 'Allgemeine Fitness'
-        };
-
-        const timeLabels: Record<string, string> = {
-            morning: 'Morgens (6:00 - 11:00)',
-            afternoon: 'Nachmittags (11:00 - 17:00)',
-            evening: 'Abends (17:00 - 22:00)',
-            flexible: 'Flexibel'
-        };
-
-        const levelLabels: Record<string, string> = {
-            beginner: 'Anfänger',
-            intermediate: 'Fortgeschritten',
-            advanced: 'Sehr Fortgeschritten'
-        };
-
-        const healthConditionLabels: Record<string, string> = {
-            back_pain: 'Rückenschmerzen',
-            joint_issues: 'Gelenkprobleme',
-            heart_condition: 'Herzprobleme',
-            diabetes: 'Diabetes',
-            asthma: 'Asthma'
-        };
-
-        const dietaryLabels: Record<string, string> = {
-            vegetarian: 'Vegetarisch',
-            vegan: 'Vegan',
-            gluten_free: 'Glutenfrei',
-            lactose_free: 'Laktosefrei',
-            low_carb: 'Low Carb'
-        };
-
-        return (
-            <Dialog open={!!user} onOpenChange={() => setSelectedUser(null)}>
-                <DialogContent className="max-w-3xl p-0 gap-0 bg-white">
-                    <DialogTitle className="sr-only">
-                        Benutzerdetails für {user.full_name || user.email}
-                    </DialogTitle>
-
-                    {/* Header Section with Gradient */}
-                    <div className="bg-gradient-to-br from-[#92A3FD] to-[#9DCEFF] p-8 rounded-t-lg text-white">
-                        <div className="flex items-center gap-4">
-                            <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
-                                <User2Icon className="w-8 h-8 text-white" />
-                            </div>
-                            <div>
-                                <h2 className="text-2xl font-bold">
-                                    {user.full_name || 'Unnamed User'}
-                                </h2>
-                                <p className="text-white/80">{user.email}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Content Section */}
-                    <div className="p-6 max-h-[70vh] overflow-y-auto">
-                        <div className="grid gap-6">
-                            {/* Main Goals Card */}
-                            <Card className="border-none shadow-lg bg-gradient-to-br from-[#92A3FD]/10 to-[#9DCEFF]/10">
-                                <CardHeader className="border-b pb-4">
-                                    <CardTitle className="flex items-center gap-2">
-                                        <Target className="w-5 h-5 text-[#92A3FD]" />
-                                        Hauptziele
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="pt-4">
-                                    <div className="grid gap-4">
-                                        <div className="flex items-center gap-4 p-3 bg-white rounded-lg shadow-sm">
-                                            <div className="w-10 h-10 rounded-full bg-[#92A3FD]/10 flex items-center justify-center">
-                                                <Trophy className="w-5 h-5 text-[#92A3FD]" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm text-gray-500">Fitnessziel</p>
-                                                <p className="font-medium">{goalLabels[user.fitness_goal || ''] || 'Nicht angegeben'}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-4 p-3 bg-white rounded-lg shadow-sm">
-                                            <div className="w-10 h-10 rounded-full bg-[#92A3FD]/10 flex items-center justify-center">
-                                                <Calendar className="w-5 h-5 text-[#92A3FD]" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm text-gray-500">Trainingstage pro Woche</p>
-                                                <p className="font-medium">{user.weekly_workout_days || 'Nicht angegeben'} Tage</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-4 p-3 bg-white rounded-lg shadow-sm">
-                                            <div className="w-10 h-10 rounded-full bg-[#92A3FD]/10 flex items-center justify-center">
-                                                <Clock className="w-5 h-5 text-[#92A3FD]" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm text-gray-500">Bevorzugte Trainingszeit</p>
-                                                <p className="font-medium">{timeLabels[user.preferred_workout_time || ''] || 'Nicht angegeben'}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-4 p-3 bg-white rounded-lg shadow-sm">
-                                            <div className="w-10 h-10 rounded-full bg-[#92A3FD]/10 flex items-center justify-center">
-                                                <Activity className="w-5 h-5 text-[#92A3FD]" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm text-gray-500">Fitnesslevel</p>
-                                                <p className="font-medium">{levelLabels[user.fitness_level || ''] || 'Nicht angegeben'}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-
-                            {/* Health Conditions Card */}
-                            {user.health_conditions?.length > 0 && (
-                                <Card className="border-none shadow-lg">
-                                    <CardHeader className="border-b pb-4">
-                                        <CardTitle className="flex items-center gap-2">
-                                            <Heart className="w-5 h-5 text-[#92A3FD]" />
-                                            Gesundheitliche Einschränkungen
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="pt-4">
-                                        <div className="grid gap-2">
-                                            {user.health_conditions.map(condition => (
-                                                <div key={condition} className="flex items-center gap-3 p-2 bg-gray-50 rounded-md">
-                                                    <AlertCircle className="w-4 h-4 text-[#92A3FD]" />
-                                                    <span>{healthConditionLabels[condition] || condition}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            )}
-
-                            {/* Target Weight Card */}
-                            {user.target_weight && (
-                                <Card className="border-none shadow-lg">
-                                    <CardHeader className="border-b pb-4">
-                                        <CardTitle className="flex items-center gap-2">
-                                            <Scale className="w-5 h-5 text-[#92A3FD]" />
-                                            Zielgewicht
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="pt-4">
-                                        <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
-                                            <div className="w-10 h-10 rounded-full bg-[#92A3FD]/10 flex items-center justify-center">
-                                                <Target className="w-5 h-5 text-[#92A3FD]" />
-                                            </div>
-                                            <div>
-                                                <p className="text-2xl font-bold text-[#92A3FD]">{user.target_weight} kg</p>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            )}
-
-                            {/* Dietary Preferences Card */}
-                            {user.dietary_preferences?.length > 0 && (
-                                <Card className="border-none shadow-lg">
-                                    <CardHeader className="border-b pb-4">
-                                        <CardTitle className="flex items-center gap-2">
-                                            <Utensils className="w-5 h-5 text-[#92A3FD]" />
-                                            Ernährungsvorlieben
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="pt-4">
-                                        <div className="flex flex-wrap gap-2">
-                                            {user.dietary_preferences.map(pref => (
-                                                <div
-                                                    key={pref}
-                                                    className="px-3 py-1 bg-[#92A3FD]/10 text-[#92A3FD] rounded-full text-sm font-medium"
-                                                >
-                                                    {dietaryLabels[pref] || pref}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            )}
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
         );
     };
 
@@ -667,7 +472,6 @@ export const AdminPage = () => {
                             ))}
                         </div>
                     )}
-                    {selectedUser && <UserDetails user={selectedUser} />}
                     {activeTab === 'progress' && (
                         <UserProgress />
                     )}

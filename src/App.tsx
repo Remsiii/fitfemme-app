@@ -35,6 +35,9 @@ import { WorkoutsPage } from "./pages/WorkoutsPage";
 import { PeriodTrackerPage } from "./pages/PeriodTracker/PeriodTrackerPage";
 import { WaterIntakePage } from "./pages/WaterIntake/WaterIntakePage";
 import { AppleWatchPage } from "./pages/AppleWatch/AppleWatchPage";
+import { WeightTrackerPage } from "./pages/WeightTracker/WeightTrackerPage";
+import { UserDetailPage } from "./pages/Admin/UserDetailPage";
+import { NotificationBell } from '@/components/NotificationBell';
 
 function App() {
   return (
@@ -73,13 +76,18 @@ function App() {
           <Route path="/workouts" element={<PrivateRoute component={WorkoutsPage} />} />
           <Route path="/period-tracker" element={<PrivateRoute component={PeriodTrackerPage} />} />
           <Route path="/water-intake" element={<PrivateRoute component={WaterIntakePage} />} />
+          <Route path="/weight-tracker" element={<PrivateRoute component={WeightTrackerPage} />} />
           <Route path="/apple-watch" element={<PrivateRoute component={AppleWatchPage} />} />
 
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
           <Route path="/admin/workout/:id" element={<AdminRoute><EditWorkout /></AdminRoute>} />
+          <Route path="/admin/users/:userId" element={<AdminRoute><UserDetailPage /></AdminRoute>} />
         </Routes>
       </main>
+      <div className="flex items-center gap-2">
+        <NotificationBell />
+      </div>
       <BottomNavigation />
       <Toaster />
     </div>

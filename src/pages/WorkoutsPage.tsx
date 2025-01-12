@@ -19,32 +19,45 @@ interface WorkoutData {
   category?: string;
 }
 
+interface AssignedWorkout {
+  id: string;
+  workout_id: number;
+  assigned_date: string;
+  completed: boolean;
+  workout: WorkoutData;
+}
+
 export function WorkoutsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [workouts, setWorkouts] = useState<WorkoutData[]>([]);
+  const [assignedWorkouts, setAssignedWorkouts] = useState<AssignedWorkout[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   useEffect(() => {
     const fetchWorkouts = async () => {
       try {
-        setIsLoading(true);
-        let query = supabase.from("workouts").select("*");
-        
-        if (selectedCategory !== "all") {
-          query = query.eq("category", selectedCategory);
-        }
+        const { data: workoutsData, error: workoutsError } = await supabase
+          .from("workouts")
+          .select("*");
 
-        const { data, error } = await query;
+        if (workoutsError) throw workoutsError;
+        setWorkouts(workoutsData || []);
 
-        if (error) {
-          throw error;
-        }
+        // Hole zugewiesene Workouts
+        const { data: assignedData, error: assignedError } = await supabase
+          .from("assigned_workouts")
+          .select(`
+            *,
+            workout:workouts (*)
+          `)
+          .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
+          .gte("assigned_date", new Date().toISOString().split('T')[0]);
 
-        if (data) {
-          setWorkouts(data);
-        }
+        if (assignedError) throw assignedError;
+        setAssignedWorkouts(assignedData || []);
+
       } catch (error) {
         console.error("Error fetching workouts:", error);
       } finally {
@@ -53,24 +66,91 @@ export function WorkoutsPage() {
     };
 
     fetchWorkouts();
-  }, [selectedCategory]);
+  }, []);
+
+  const markWorkoutComplete = async (assignedWorkoutId: string) => {
+    try {
+      const { error } = await supabase
+        .from("assigned_workouts")
+        .update({ completed: true })
+        .eq("id", assignedWorkoutId);
+
+      if (error) throw error;
+
+      // Aktualisiere die lokale Liste
+      setAssignedWorkouts(prev =>
+        prev.map(workout =>
+          workout.id === assignedWorkoutId
+            ? { ...workout, completed: true }
+            : workout
+        )
+      );
+    } catch (error) {
+      console.error("Error marking workout as complete:", error);
+    }
+  };
 
   const categories = ["all", "cardio", "strength", "flexibility", "yoga"];
 
   return (
-    <div className="bg-white min-h-screen p-6">
-      <header className="flex items-center mb-6">
+    <div className="p-4">
+      <header className="flex items-center justify-between mb-6">
         <Button
           variant="ghost"
           size="icon"
-          className="mr-2"
-          onClick={() => navigate(-1)}
+          className="bg-[#f7f8f8]"
+          onClick={() => navigate("/home")}
         >
-          <ArrowLeftIcon className="h-6 w-6" />
+          <ArrowLeftIcon className="h-4 w-4" />
         </Button>
-        <h1 className="text-2xl font-semibold">{t("All Workouts")}</h1>
+        <h1 className="text-xl font-bold">{t("workouts.title")}</h1>
+        <div className="w-8" /> {/* Spacer für symmetrisches Layout */}
       </header>
 
+      {/* Zugewiesene Workouts Sektion */}
+      {assignedWorkouts.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold mb-4">Zugewiesene Workouts für Heute</h2>
+          <div className="space-y-4">
+            {assignedWorkouts.map((assigned) => (
+              <Card key={assigned.id} className="overflow-hidden">
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="font-medium">{assigned.workout.name}</h3>
+                      <p className="text-sm text-gray-500">
+                        {new Date(assigned.assigned_date).toLocaleDateString()}
+                      </p>
+                      {assigned.workout.duration && (
+                        <p className="text-sm text-gray-500">
+                          Dauer: {assigned.workout.duration} Minuten
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      {assigned.completed ? (
+                        <span className="text-green-500 px-3 py-1 rounded-full bg-green-50">
+                          ✓ Abgeschlossen
+                        </span>
+                      ) : (
+                        <Button
+                          onClick={() => markWorkoutComplete(assigned.id)}
+                          variant="outline"
+                          size="sm"
+                        >
+                          Als erledigt markieren
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Bestehende Workouts Liste */}
       <div className="mb-6 overflow-x-auto">
         <div className="flex space-x-2 pb-2">
           {categories.map((category) => (

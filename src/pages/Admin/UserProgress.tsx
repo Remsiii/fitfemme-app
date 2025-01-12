@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Loader2Icon } from "lucide-react";
+import { Loader2Icon, ChevronRightIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useNavigate } from "react-router-dom";
 
 interface UserProgress {
     id: string;
@@ -19,6 +20,7 @@ interface UserProgress {
 export default function UserProgress() {
     const [users, setUsers] = useState<UserProgress[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchUsers();
@@ -139,11 +141,18 @@ export default function UserProgress() {
     return (
         <div className="space-y-4">
             {users.map((user) => (
-                <Card key={user.id} className="overflow-hidden">
+                <Card 
+                    key={user.id} 
+                    className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
+                    onClick={() => navigate(`/admin/users/${user.id}`)}
+                >
                     <CardHeader className="bg-gradient-to-r from-[#92A3FD] to-[#9DCEFF] text-white p-4">
                         <div className="flex justify-between items-center">
                             <h3 className="font-semibold">{user.name || 'Anonymous'}</h3>
-                            <span className="text-sm opacity-90">{user.email}</span>
+                            <div className="flex items-center">
+                                <span className="text-sm opacity-90 mr-2">{user.email}</span>
+                                <ChevronRightIcon className="w-5 h-5" />
+                            </div>
                         </div>
                     </CardHeader>
                     <CardContent className="p-4">
